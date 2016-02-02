@@ -35,7 +35,6 @@ Matrix::Matrix(const Matrix &obj) {
 }
 
 void Matrix::init(int inNumRows, int inNumCols) {
-	// Set height/width of matrix
 	numRows = inNumRows;
 	numCols = inNumCols;
 	matrix.resize(numRows);
@@ -43,7 +42,6 @@ void Matrix::init(int inNumRows, int inNumCols) {
 		matrix[i].resize(numCols);
 	}
 	initialised = true;	
-	// Set values to zero
 	setZero();
 }
 
@@ -127,43 +125,69 @@ Matrix Matrix::pow(int p) {
 	}
 }
 
-Matrix Matrix::taylorExp(int k) {
-	if (initialised) {
-		double nfact = 1;
-		double coef;
-		Matrix matrixAn, term;
-		Matrix matrixB(numRows, numCols);
-		matrixB.setIdentity();
-		for (int n = 1; n <= k; n++) {
-			nfact *= n;
-			coef = 1.0 / nfact;
-			matrixAn = pow(n);
-			term = matrixAn.mul(coef);
-			matrixB = matrixB.add(term);
-		}
-		return matrixB;
+Matrix Matrix::taylorMExp(int k) {
+	double nfact = 1;
+	double coef;
+	Matrix matrixAn, term;
+	Matrix matrixB(numRows, numCols);
+	matrixB.setIdentity();
+	for (int n = 1; n <= k; n++) {
+		nfact *= n;
+		coef = 1.0 / nfact;
+		matrixAn = pow(n);
+		term = matrixAn.mul(coef);
+		matrixB = matrixB.add(term);
 	}
-	else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
+	return matrixB;
 }
 
-Matrix Matrix::padeExp(int k) {
+Matrix Matrix::padeMExp(int k) {
+	double nfact = 1;
+	double coef;
+	Matrix matrixAn, term;
+	Matrix matrixB(numRows, numCols);
+	matrixB.setIdentity();
+	for (int n = 1; n <= k; n++) {
+		nfact *= n;
+		coef = 1.0 / nfact;
+		matrixAn = pow(n);
+		term = matrixAn.mul(coef);
+		matrixB = matrixB.add(term);
+	}
+	return matrixB;
+}
+
+Matrix Matrix::diagonalMExp() {
+	Matrix matrixB(*this);
+	for (int c1 = 0; c1 < numRows; c1++) {
+		matrixB.matrix[c1][c1] = exp(matrixB.matrix[c1][c1]);
+	}
+	return matrixB;
+}
+
+Matrix Matrix::zeroMExp() {
+	Matrix matrixB(*this);
+	return matrixB;
+}
+
+Matrix Matrix::mExp(int k, char method) {
 	if (initialised) {
-		double nfact = 1;
-		double coef;
-		Matrix matrixAn, term;
-		Matrix matrixB(numRows, numCols);
-		matrixB.setIdentity();
-		for (int n = 1; n <= k; n++) {
-			nfact *= n;
-			coef = 1.0 / nfact;
-			matrixAn = pow(n);
-			term = matrixAn.mul(coef);
-			matrixB = matrixB.add(term);
+		// Special Cases
+		if (isDiagonal()) {
+			return diagonalMExp();
 		}
-		return matrixB;
+		else if (isZero()) {
+			return zeroMExp();
+		}
+		// Ordinary Cases
+		else {
+			switch (method) {
+			case 't':
+				return taylorMExp(k);
+			case 'p':
+				return padeMExp(k);
+			}
+		}
 	}
 	else {
 		// Error! Cannot perform matrix operations before initialisation
@@ -323,14 +347,20 @@ void Matrix::setCell(int row, int col, double value) {
 
 // Output
 
-void Matrix::printm() {
+void Matrix::printm(int precision) {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			printf("|");
 			for (int c2 = 0; c2 < numCols; c2++) {
 				if (matrix[c1][c2] >= 0) {
-					printf(" ");
-					printf("%.3f", (matrix[c1][c2]));
+					if (abs(matrix[c1][c2] - (int) matrix[c1][c2]) > 0) {
+						// Decimal
+						printf(" %.*f", precision, matrix[c1][c2]);
+					}
+					else {
+						// Integer
+						printf(" %.0f", matrix[c1][c2]);
+					}
 				}
 				else {
 					printf(" -");

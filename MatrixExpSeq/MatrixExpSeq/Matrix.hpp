@@ -14,12 +14,19 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <math.h>
 
 class Matrix {
 private:
+	// Variables
 	std::vector<std::vector<double>> matrix;
 	int numRows, numCols;
 	bool initialised;
+	// Internal Matrix Functions
+	Matrix taylorMExp(int k);
+	Matrix padeMExp(int k);
+	Matrix diagonalMExp();
+	Matrix zeroMExp();
 public:
 	// Constructors
 	Matrix();
@@ -32,8 +39,7 @@ public:
 	Matrix mul(Matrix matrixB);
 	Matrix mul(double m);
 	Matrix pow(int p);
-	Matrix taylorExp(int n);
-	Matrix padeExp(int n);
+	Matrix mExp(int a, char method = 't');
 	void setZero();
 	void setIdentity();
 	// Booleans
@@ -49,7 +55,7 @@ public:
 	void setMatrix(std::vector<std::vector<double>> inMatrix);
 	void setCell(int row, int col, double value);
 	// Output
-	void printm();
+	void printm(int precision = 3);
 };
 
 #endif
