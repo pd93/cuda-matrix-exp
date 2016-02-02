@@ -103,7 +103,7 @@ Matrix Matrix::mul(double m) {
 		Matrix matrixB(numRows, numCols);
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
-				matrixB.matrix[c1][c2] = matrix[c1][c2] * m;
+				matrixB.matrix[c1][c2] = (int) (matrix[c1][c2] * m);
 			}
 		}
 		return matrixB;
@@ -129,19 +129,18 @@ Matrix Matrix::pow(int p) {
 
 Matrix Matrix::exp(int k) {
 	if (initialised) {
-		Matrix A(numRows, numCols);
+		int nfact = 1;
+		double coef;
+		Matrix matrixAn, term;
+		Matrix matrixB(numRows, numCols);
 		for (int n = 1; n <= k; n++) {
-			// Use precalculated factorials here
-			// Temporary code to calculate on the go
-			int nfact = 1;
-			for (int c1 = 1; c1 <= n; c1++) {
-				nfact *= c1;
-			}
-			// End of temporary code
-			A.add(pow(n).mul(1 / nfact));
-			printf(A.toString().c_str());
+			nfact *= n;
+			coef = 1.0 / nfact;
+			matrixAn = pow(n);
+			term = matrixAn.mul(coef);
+			matrixB = matrixB.add(term);
 		}
-		return A;
+		return matrixB;
 	}
 	else {
 		// Error! Cannot perform matrix operations before initialisation

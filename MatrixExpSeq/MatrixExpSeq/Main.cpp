@@ -56,7 +56,7 @@ int main(int argc, char **argv) {
 
 		// Create F = e^A =
 		printf("\nCreate F = e^A =\n");
-		Matrix matrixF(matrixA.exp(6));
+		Matrix matrixF(matrixA.exp(10));
 		printf(matrixF.toString().c_str());
 	}
 	catch (int e) {
