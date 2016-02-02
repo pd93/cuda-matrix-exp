@@ -1,5 +1,12 @@
 //
-// Author: Pete Davison (2016)
+// Cardiff University | Computer Science
+// Module:     CM3203 One Semester Project (40 Credits)
+// Title:      Parallelisation of Matrix Exponentials in C++/CUDA for Quantum Control
+// Date:       2016
+//
+// Author:     Peter Davison
+// Supervisor: Dr. Frank C Langbein
+// Moderator:  Dr. Irena Spasic
 //
 
 #include "Matrix.hpp"
@@ -15,7 +22,7 @@ Matrix::Matrix(int inNumRows, int inNumCols) {
 }
 
 Matrix::Matrix(std::vector<std::vector<int>> inMatrix) {
-	init(inMatrix.size(), inMatrix[0].size());
+	init((int) inMatrix.size(), (int) inMatrix[0].size());
 	setMatrix(inMatrix);
 }
 
