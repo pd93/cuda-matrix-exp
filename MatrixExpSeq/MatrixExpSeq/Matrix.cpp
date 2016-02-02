@@ -26,10 +26,10 @@ Matrix::Matrix(std::vector<std::vector<int>> inMatrix) {
 	setMatrix(inMatrix);
 }
 
-Matrix::Matrix(const Matrix &obj) {
-	// COPY CONSTRUCTOR NOT COMPLETE
-	matrix = obj.matrix;
-}
+//Matrix::Matrix(const Matrix &obj) {
+//	// COPY CONSTRUCTOR NOT COMPLETE
+//	matrix = obj.matrix;
+//}
 
 void Matrix::init(int inNumRows, int inNumCols) {
 	// Set height/width of matrix

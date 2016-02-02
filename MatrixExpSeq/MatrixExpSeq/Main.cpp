@@ -13,30 +13,33 @@
 
 int main(int argc, char **argv) {
 
+	// Create A
 	std::vector<std::vector<int>> vectorA({
 		{ 1, 2, 3 },
 		{ 4, 5, 6 }
 	});
-	std::vector<std::vector<int>> vectorB({
-		{ 1, 2, 3 },
-		{ 4, 5, 6 },
-		{ 7, 8, 9 }
-	});
 	Matrix matrixA(vectorA);
-	Matrix matrixB(vectorB);
-	Matrix matrixC = matrixA.mul(matrixB);
-	//Matrix matrixD = matrixC.pow(2);
-	
-	// Print results and pause
-	printf("Matrix A:\n");
+	printf("\nCreate A =\n");
 	printf(matrixA.toString().c_str());
-	printf("Matrix B:\n");
+
+	// Create B
+	std::vector<std::vector<int>> vectorB({
+		{ 1, 2 },
+		{ 4, 5 },
+		{ 7, 8 }
+	});
+	Matrix matrixB(vectorB);
+	printf("\nCreate B =:\n");
 	printf(matrixB.toString().c_str());
-	printf("Matrix A * Matrix B:\n");
+
+	// Create C = A * B
+	Matrix matrixC = matrixA.mul(matrixB);
+	printf("\nCreate C = A * B =\n");
 	printf(matrixC.toString().c_str());
-	printf("(Matrix A * Matrix B) ^ 2:\n");
+
+	// Create D = C ^ 2
+	//Matrix matrixD = matrixC.pow(2);
+	printf("\nCreate D = C ^ 2 =\n");
 	//printf(matrixD.toString().c_str());
-	getchar(); // Pause
-	getchar();
 
 }
