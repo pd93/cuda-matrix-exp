@@ -17,14 +17,14 @@
 
 class Matrix {
 private:
-	std::vector<std::vector<int>> matrix;
+	std::vector<std::vector<double>> matrix;
 	int numRows, numCols;
 	bool initialised;
 public:
 	// Constructors
 	Matrix();
 	Matrix(int inNumRows, int inNumCols);
-	Matrix(std::vector<std::vector<int>> inMatrix);
+	Matrix(std::vector<std::vector<double>> inMatrix);
 	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
 	// Matrix Functions
@@ -45,10 +45,10 @@ public:
 	int getNumRows();
 	int getNumCols();
 	// Setters
-	void setMatrix(std::vector<std::vector<int>> inMatrix);
-	void setCell(int row, int col, int value);
+	void setMatrix(std::vector<std::vector<double>> inMatrix);
+	void setCell(int row, int col, double value);
 	// Output
-	std::string toString();
+	void printm();
 };
 
 #endif

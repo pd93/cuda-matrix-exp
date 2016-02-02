@@ -16,48 +16,48 @@ int main(int argc, char **argv) {
 	try {
 		// Create A
 		printf("\nCreate A =\n");
-		std::vector<std::vector<int>> vectorA({
+		std::vector<std::vector<double>> vectorA({
 			{ 1, 2, 3 },
 			{ 3, 2, 1 },
 			{ 2, 1, 3 }
 		});
 		Matrix matrixA(vectorA);
-		printf(matrixA.toString().c_str());
+		matrixA.printm();
 
 		// Create B
 		printf("\nCreate B =\n");
-		std::vector<std::vector<int>> vectorB({
+		std::vector<std::vector<double>> vectorB({
 			{ 1, 2, 3 },
 			{ 4, 5, 6 },
 			{ 7, 8, 9 }
 		});
 		Matrix matrixB(vectorB);
-		printf(matrixB.toString().c_str());
+		matrixB.printm();
 
 		// Create C = A+B
 		printf("\nCreate C = A+B =\n");
 		Matrix matrixC(matrixA.add(matrixB));
-		printf(matrixC.toString().c_str());
+		matrixC.printm();
 
 		// Create D1 = A*3
 		printf("\nCreate D1 = A*3 =\n");
 		Matrix matrixD1(matrixA.mul(3));
-		printf(matrixD1.toString().c_str());
+		matrixD1.printm();
 
 		// Create D2 = A*B
 		printf("\nCreate D2 = A*B =\n");
 		Matrix matrixD2(matrixA.mul(matrixB));
-		printf(matrixD2.toString().c_str());
+		matrixD2.printm();
 
 		// Create E = B^2
 		printf("\nCreate E = B^2 =\n");
 		Matrix matrixE(matrixB.pow(2));
-		printf(matrixE.toString().c_str());
+		matrixE.printm();
 
 		// Create F = e^A =
 		printf("\nCreate F = e^A =\n");
 		Matrix matrixF(matrixA.exp(10));
-		printf(matrixF.toString().c_str());
+		matrixF.printm();
 	}
 	catch (int e) {
 		printf("\n||||||||||||||||\n|| Error: %i ||\n||||||||||||||||\n", e);

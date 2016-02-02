@@ -21,7 +21,7 @@ Matrix::Matrix(int inNumRows, int inNumCols) {
 	init(inNumRows, inNumCols);
 }
 
-Matrix::Matrix(std::vector<std::vector<int>> inMatrix) {
+Matrix::Matrix(std::vector<std::vector<double>> inMatrix) {
 	init((int) inMatrix.size(), (int) inMatrix[0].size());
 	setMatrix(inMatrix);
 }
@@ -75,7 +75,7 @@ Matrix Matrix::mul(Matrix matrixB) {
 	if (initialised && matrixB.initialised) {
 		if (numCols == matrixB.getNumRows()) {
 			Matrix matrixC(numRows, matrixB.getNumCols());
-			int cell;
+			double cell;
 			for (int c1 = 0; c1 < numRows; c1++) {
 				for (int c2 = 0; c2 < matrixB.getNumCols(); c2++) {
 					cell = 0;
@@ -103,7 +103,7 @@ Matrix Matrix::mul(double m) {
 		Matrix matrixB(numRows, numCols);
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
-				matrixB.matrix[c1][c2] = (int) (matrix[c1][c2] * m);
+				matrixB.matrix[c1][c2] = matrix[c1][c2] * m;
 			}
 		}
 		return matrixB;
@@ -290,33 +290,31 @@ int Matrix::getNumCols() {
 
 // Setters
 
-void Matrix::setMatrix(std::vector<std::vector<int>> inMatrix) {
+void Matrix::setMatrix(std::vector<std::vector<double>> inMatrix) {
 	matrix = inMatrix;
 }
 
-void Matrix::setCell(int row, int col, int value) {
+void Matrix::setCell(int row, int col, double value) {
 	matrix[row][col] = value;
 }
 
 // Output
 
-std::string Matrix::toString() {
+void Matrix::printm() {
 	if (initialised) {
-		std::string output("");
 		for (int c1 = 0; c1 < numRows; c1++) {
-			output.append("|");
+			printf("|");
 			for (int c2 = 0; c2 < numCols; c2++) {
 				if (matrix[c1][c2] >= 0) {
-					output.append(" ");
-					output.append(std::to_string(matrix[c1][c2]));
+					printf(" ");
+					printf("%i", (int) (matrix[c1][c2]));
 				}
 				else {
-					output.append(" -");
+					printf(" -");
 				}
 			}
-			output.append(" |\n");
+			printf(" |\n");
 		}
-		return output;
 	}
 	else {
 		// Error! Cannot print matrix before initialisation
