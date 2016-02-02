@@ -39,27 +39,26 @@ Matrix Matrix::mul(Matrix matrixB) {
 		Matrix matrixC;
 		if (numCols == matrixB.getNumRows()) {
 			matrixC.init(numRows, matrixB.getNumCols());
-			printf(matrixC.toString().c_str());
-			getchar();
-			int cell = 0;
+			int cell;
 			for (int c1 = 0; c1 < numRows; c1++) {
 				for (int c2 = 0; c2 < matrixB.getNumCols(); c2++) {
-					for (int c3 = 0; c3 < matrixB.getNumRows(); c3++) {
-						cell += matrix[c3][c1] * matrixB.matrix[c2][c3];
-					}
-					matrixC.matrix[c2][c1] = cell;
 					cell = 0;
+					for (int c3 = 0; c3 < matrixB.getNumRows(); c3++) {
+						cell += matrix[c1][c3] * matrixB.matrix[c3][c2];
+					}
+					matrixC.matrix[c1][c2] = cell;
 				}
 			}
-			getchar();
 		}
 		else {
-			printf("Error! Cannot multiply these matrices together.\n");
+			// Error! Cannot multiply these matrices together
+			throw (202);
 		}
 		return matrixC;
 	}
 	else {
-		printf("Error! Cannot perform matrix operations before initialisation.\n");
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
 	}
 }
 
@@ -75,7 +74,8 @@ Matrix Matrix::pow(int power) {
 		return matrixB;
 	}
 	else {
-		printf("Error! Cannot perform matrix operations before initialisation.\n");
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
 	}
 }
 
@@ -88,7 +88,8 @@ Matrix Matrix::exp(int order) {
 		return A;
 	}
 	else {
-		printf("Error! Cannot perform matrix operations before initialisation.\n");
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
 	}
 }
 
@@ -101,7 +102,8 @@ void Matrix::setZero() {
 		}
 	}
 	else {
-		printf("Error! Cannot perform matrix operations before initialisation.\n");
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
 	}
 }
 
@@ -119,7 +121,8 @@ void Matrix::setIdentity() {
 		}
 	}
 	else {
-		printf("Error! Cannot perform matrix operations before initialisation.\n");
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
 	}
 }
 
@@ -134,7 +137,8 @@ std::string Matrix::toString() {
 				if (matrix[c1][c2] >= 0) {
 					output.append(" ");
 					output.append(std::to_string(matrix[c1][c2]));
-				} else {
+				}
+				else {
 					output.append(" -");
 				}
 			}
@@ -143,8 +147,8 @@ std::string Matrix::toString() {
 		return output;
 	}
 	else {
-		printf("Error! Cannot print matrix before initialisation.\n");
-		return std::string("");
+		// Error! Cannot print matrix before initialisation
+		throw (102);
 	}
 }
 
@@ -155,8 +159,8 @@ int Matrix::getNumRows() {
 		return numRows;
 	}
 	else {
-		printf("Error! Cannot determine number of rows in matrix before initialisation.\n");
-		return 0;
+		// Error! Cannot determine number of rows in matrix before initialisation
+		throw (103);
 	}
 }
 
@@ -165,8 +169,8 @@ int Matrix::getNumCols() {
 		return numCols;
 	}
 	else {
-		printf("Error! Cannot determine number of columns in matrix before initialisation.\n");
-		return 0;
+		// Error! Cannot determine number of columns in matrix before initialisation
+		throw (104);
 	}
 }
 
@@ -192,8 +196,8 @@ bool Matrix::isSquare() {
 		}
 	}
 	else {
-		printf("Error! Cannot determine if matrix is square before initialisation.\n");
-		return false;
+		// Error! Cannot determine if matrix is square before initialisation
+		throw (105);
 	}
 }
 
@@ -209,8 +213,8 @@ bool Matrix::isDiagonal() {
 		return true;
 	}
 	else {
-		printf("Error! Cannot determine if matrix is diagonal before initialisation.\n");
-		return false;
+		// Error! Cannot determine if matrix is diagonal before initialisation
+		throw (106);
 	}
 }
 
@@ -226,8 +230,8 @@ bool Matrix::isScalar() {
 		return true;
 	}
 	else {
-		printf("Error! Cannot determine if matrix is scalar before initialisation.\n");
-		return false;
+		// Error! Cannot determine if matrix is scalar before initialisation
+		throw (107);
 	}
 }
 
@@ -243,8 +247,8 @@ bool Matrix::isIdentity() {
 		return true;
 	}
 	else {
-		printf("Error! Cannot determine if matrix is an identity matrix before initialisation.\n");
-		return false;
+		// Error! Cannot determine if matrix is an identity matrix before initialisation
+		throw (108);
 	}
 }
 
@@ -260,7 +264,7 @@ bool Matrix::isZero() {
 		return true;
 	}
 	else {
-		printf("Error! Cannot determine if matrix is a zero matrix before initialisation.\n");
-		return false;
+		// Error! Cannot determine if matrix is a zero matrix before initialisation
+		throw (109);
 	}
 }
