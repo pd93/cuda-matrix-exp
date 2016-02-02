@@ -32,7 +32,8 @@ public:
 	Matrix mul(Matrix matrixB);
 	Matrix mul(double m);
 	Matrix pow(int p);
-	Matrix exp(int n);
+	Matrix taylorExp(int n);
+	Matrix padeExp(int n);
 	void setZero();
 	void setIdentity();
 	// Booleans

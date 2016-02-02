@@ -127,7 +127,7 @@ Matrix Matrix::pow(int p) {
 	}
 }
 
-Matrix Matrix::exp(int k) {
+Matrix Matrix::taylorExp(int k) {
 	if (initialised) {
 		double nfact = 1;
 		double coef;
@@ -136,13 +136,31 @@ Matrix Matrix::exp(int k) {
 		matrixB.setIdentity();
 		for (int n = 1; n <= k; n++) {
 			nfact *= n;
-			//printf("nfact: %i\n", nfact);
 			coef = 1.0 / nfact;
-			//printf("coef: %.10f\n", coef);
 			matrixAn = pow(n);
 			term = matrixAn.mul(coef);
-			//printf("n = %i:\n", n);
-			//term.printm();
+			matrixB = matrixB.add(term);
+		}
+		return matrixB;
+	}
+	else {
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
+	}
+}
+
+Matrix Matrix::padeExp(int k) {
+	if (initialised) {
+		double nfact = 1;
+		double coef;
+		Matrix matrixAn, term;
+		Matrix matrixB(numRows, numCols);
+		matrixB.setIdentity();
+		for (int n = 1; n <= k; n++) {
+			nfact *= n;
+			coef = 1.0 / nfact;
+			matrixAn = pow(n);
+			term = matrixAn.mul(coef);
 			matrixB = matrixB.add(term);
 		}
 		return matrixB;
