@@ -25,28 +25,30 @@ public:
 	Matrix();
 	Matrix(int inNumRows, int inNumCols);
 	Matrix(std::vector<std::vector<int>> inMatrix);
-	//Matrix(const Matrix &obj);
+	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
 	// Matrix Functions
+	Matrix add(Matrix martixB);
 	Matrix mul(Matrix matrixB);
-	Matrix pow(int power);
-	Matrix exp(int order);
+	Matrix mul(double m);
+	Matrix pow(int p);
+	Matrix exp(int n);
 	void setZero();
 	void setIdentity();
-	// Output
-	std::string toString();
-	// Getters
-	int getNumRows();
-	int getNumCols();
-	// Setters
-	void setMatrix(std::vector<std::vector<int>> inMatrix);
-	void setCell(int row, int col, int value);
 	// Booleans
 	bool isSquare();
 	bool isDiagonal();
 	bool isScalar();
 	bool isIdentity();
 	bool isZero();
+	// Getters
+	int getNumRows();
+	int getNumCols();
+	// Setters
+	void setMatrix(std::vector<std::vector<int>> inMatrix);
+	void setCell(int row, int col, int value);
+	// Output
+	std::string toString();
 };
 
 #endif

@@ -12,4 +12,5 @@
 
 2XX - Matrix errors
 
-202 - Cannot Multiply these matrices together
+201 - Cannot add these matrices together
+202 - Cannot multiply these matrices together
