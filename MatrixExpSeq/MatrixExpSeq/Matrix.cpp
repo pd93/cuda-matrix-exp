@@ -19,6 +19,11 @@ Matrix::Matrix(std::vector<std::vector<int>> inMatrix) {
 	setMatrix(inMatrix);
 }
 
+Matrix::Matrix(const Matrix &obj) {
+	// COPY CONSTRUCTOR NOT COMPLETE
+	matrix = obj.matrix;
+}
+
 void Matrix::init(int inNumRows, int inNumCols) {
 	// Set height/width of matrix
 	numRows = inNumRows;
@@ -65,11 +70,11 @@ Matrix Matrix::mul(Matrix matrixB) {
 Matrix Matrix::pow(int power) {
 	if (initialised) {
 		Matrix matrixB;
-		memcpy(&matrixB.matrix, &matrix, sizeof(matrix));
-		printf("%s\n", toString().c_str());
-		printf("%s\n", matrixB.toString().c_str());
+		matrixB.setMatrix(matrix);
+		printf(toString().c_str());
+		printf(matrixB.toString().c_str());
 		for (int c1 = 0; c1 < power - 1; c1++) {
-			matrixB = mul(matrixB);
+			matrixB = mul(matrix);
 		}
 		return matrixB;
 	}

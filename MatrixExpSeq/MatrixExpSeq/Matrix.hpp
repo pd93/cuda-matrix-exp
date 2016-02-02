@@ -18,6 +18,7 @@ public:
 	Matrix();
 	Matrix(int inNumRows, int inNumCols);
 	Matrix(std::vector<std::vector<int>> inMatrix);
+	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
 	// Matrix Functions
 	Matrix mul(Matrix matrixB);
