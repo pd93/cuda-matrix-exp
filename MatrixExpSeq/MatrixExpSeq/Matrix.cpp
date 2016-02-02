@@ -129,15 +129,20 @@ Matrix Matrix::pow(int p) {
 
 Matrix Matrix::exp(int k) {
 	if (initialised) {
-		int nfact = 1;
+		double nfact = 1;
 		double coef;
 		Matrix matrixAn, term;
 		Matrix matrixB(numRows, numCols);
+		matrixB.setIdentity();
 		for (int n = 1; n <= k; n++) {
 			nfact *= n;
+			//printf("nfact: %i\n", nfact);
 			coef = 1.0 / nfact;
+			//printf("coef: %.10f\n", coef);
 			matrixAn = pow(n);
 			term = matrixAn.mul(coef);
+			//printf("n = %i:\n", n);
+			//term.printm();
 			matrixB = matrixB.add(term);
 		}
 		return matrixB;
@@ -307,7 +312,7 @@ void Matrix::printm() {
 			for (int c2 = 0; c2 < numCols; c2++) {
 				if (matrix[c1][c2] >= 0) {
 					printf(" ");
-					printf("%i", (int) (matrix[c1][c2]));
+					printf("%.3f", (matrix[c1][c2]));
 				}
 				else {
 					printf(" -");
