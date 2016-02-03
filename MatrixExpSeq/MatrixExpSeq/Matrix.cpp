@@ -113,7 +113,7 @@ Matrix Matrix::mul(double m) {
 
 Matrix Matrix::pow(int p) {
 	if (initialised) {
-		Matrix matrixB = *this;
+		Matrix matrixB(*this);
 		for (int c1 = 0; c1 < p - 1; c1++) {
 			matrixB = matrixB.mul(matrix);
 		}
