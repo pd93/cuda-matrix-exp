@@ -182,10 +182,12 @@ Matrix Matrix::mExp(int k, char method) {
 		// Ordinary Cases
 		else {
 			switch (method) {
-			case 't':
-				return taylorMExp(k);
-			case 'p':
-				return padeMExp(k);
+				default:
+					return taylorMExp(k);
+				case 't':
+					return taylorMExp(k);
+				case 'p':
+					return padeMExp(k);
 			}
 		}
 	}

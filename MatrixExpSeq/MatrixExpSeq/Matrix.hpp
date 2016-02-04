@@ -39,7 +39,7 @@ public:
 	Matrix mul(Matrix matrixB);
 	Matrix mul(double m);
 	Matrix pow(int p);
-	Matrix mExp(int a, char method = 't');
+	Matrix mExp(int a, char method = ' ');
 	void setZero();
 	void setIdentity();
 	// Booleans
