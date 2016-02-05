@@ -81,7 +81,7 @@ int main(int argc, char **argv) {
 		// Create D = A*R
 		cout << endl << "Create D = A*R =" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* D = Matrix::mul(A, R);
+		Matrix* D = Matrix::mul(A, I);
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << D;
