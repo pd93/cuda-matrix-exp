@@ -23,10 +23,10 @@ private:
 	int numRows, numCols;
 	bool initialised;
 	// Internal Matrix Functions
-	Matrix taylorMExp(int k);
-	Matrix padeMExp(int k);
-	Matrix diagonalMExp();
-	Matrix zeroMExp();
+	static Matrix* taylorMExp(Matrix* A, int k);
+	static Matrix* padeMExp(Matrix* A, int k);
+	static Matrix* diagonalMExp(Matrix* A);
+	static Matrix* zeroMExp(Matrix* A);
 public:
 	// Constructors
 	Matrix();
@@ -35,11 +35,11 @@ public:
 	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
 	// Matrix Functions
-	Matrix add(Matrix martixB);
-	Matrix mul(Matrix matrixB);
-	Matrix mul(double m);
-	Matrix pow(int p);
-	Matrix mExp(int a, char method = ' ');
+	static Matrix* add(Matrix* A, Matrix* B);
+	static Matrix* mul(Matrix* A, Matrix* B);
+	static Matrix* mul(Matrix* A, double B);
+	static Matrix* pow(Matrix* A, int x);
+	static Matrix* mExp(Matrix* A, char method = ' ', int k = -1);
 	void setZero();
 	void setIdentity();
 	// Booleans
@@ -49,6 +49,7 @@ public:
 	bool isIdentity();
 	bool isZero();
 	// Getters
+	double getCell(int x, int y);
 	int getNumRows();
 	int getNumCols();
 	// Setters

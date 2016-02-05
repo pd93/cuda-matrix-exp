@@ -47,16 +47,20 @@ void Matrix::init(int inNumRows, int inNumCols) {
 
 // Matrix Functions
 
-Matrix Matrix::add(Matrix matrixB) {
-	if (initialised && matrixB.initialised) {
-		if (numRows == matrixB.getNumRows() && numCols == matrixB.getNumCols()) {
-			Matrix matrixC(numRows, numCols);
-			for (int c1 = 0; c1 < numRows; c1++) {
-				for (int c2 = 0; c2 < numCols; c2++) {
-					matrixC.matrix[c1][c2] = matrix[c1][c2] + matrixB.matrix[c1][c2];
+Matrix* Matrix::add(Matrix* A, Matrix* B) {
+	if (A->initialised && B->initialised) {
+		int ar = A->getNumRows();
+		int ac = A->getNumCols();
+		int br = B->getNumRows();
+		int bc = B->getNumCols();
+		if (ar == br && ac == bc) {
+			Matrix *R = new Matrix(ar, ac);
+			for (int c1 = 0; c1 < ar; c1++) {
+				for (int c2 = 0; c2 < ac; c2++) {
+					R->setCell(c1, c2, A->getCell(c1, c2) + B->getCell(c1, c2));
 				}
 			}
-			return matrixC;
+			return R;
 		}
 		else {
 			// Error! Cannot add these matrices
@@ -69,21 +73,25 @@ Matrix Matrix::add(Matrix matrixB) {
 	}
 }
 
-Matrix Matrix::mul(Matrix matrixB) {
-	if (initialised && matrixB.initialised) {
-		if (numCols == matrixB.getNumRows()) {
-			Matrix matrixC(numRows, matrixB.getNumCols());
+Matrix* Matrix::mul(Matrix* A, Matrix* B) {
+	if (A->initialised && B->initialised) {
+		int ar = A->getNumRows();
+		int ac = A->getNumCols();
+		int br = B->getNumRows();
+		int bc = B->getNumCols();
+		if (ac == br) {
+			Matrix* R = new Matrix(ar, bc);
 			double cell;
-			for (int c1 = 0; c1 < numRows; c1++) {
-				for (int c2 = 0; c2 < matrixB.getNumCols(); c2++) {
+			for (int c1 = 0; c1 < ar; c1++) {
+				for (int c2 = 0; c2 < bc; c2++) {
 					cell = 0;
-					for (int c3 = 0; c3 < matrixB.getNumRows(); c3++) {
-						cell += matrix[c1][c3] * matrixB.matrix[c3][c2];
+					for (int c3 = 0; c3 < br; c3++) {
+						cell += A->getCell(c1, c3) * B->getCell(c3, c2);
 					}
-					matrixC.matrix[c1][c2] = cell;
+					R->setCell(c1, c2, cell);
 				}
 			}
-			return matrixC;
+			return R;
 		}
 		else {
 			// Error! Cannot multiply these matrices together
@@ -96,28 +104,31 @@ Matrix Matrix::mul(Matrix matrixB) {
 	}
 }
 
-Matrix Matrix::mul(double m) {
-	if (initialised) {
-		Matrix matrixB(numRows, numCols);
-		for (int c1 = 0; c1 < numRows; c1++) {
-			for (int c2 = 0; c2 < numCols; c2++) {
-				matrixB.matrix[c1][c2] = matrix[c1][c2] * m;
+Matrix* Matrix::mul(Matrix* A, double B) {
+	if (A->initialised) {
+		int ar = A->getNumRows();
+		int ac = A->getNumCols();
+		Matrix* R = new Matrix(ar, ac);
+		for (int c1 = 0; c1 < ar; c1++) {
+			for (int c2 = 0; c2 < ac; c2++) {
+				R->setCell(c1, c2, A->getCell(c1, c2) * B);
 			}
 		}
-		return matrixB;
+		return R;
 	} else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
 }
 
-Matrix Matrix::pow(int p) {
-	if (initialised) {
-		Matrix matrixB(*this);
-		for (int c1 = 0; c1 < p - 1; c1++) {
-			matrixB = matrixB.mul(matrix);
+Matrix* Matrix::pow(Matrix* A, int x) {
+	if (A->initialised) {
+		Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
+		R->setIdentity();
+		for (int c1 = 1; c1 <= x; c1++) {
+			R = Matrix::mul(A, R);
 		}
-		return matrixB;
+		return R;
 	}
 	else {
 		// Error! Cannot perform matrix operations before initialisation
@@ -125,69 +136,63 @@ Matrix Matrix::pow(int p) {
 	}
 }
 
-Matrix Matrix::taylorMExp(int k) {
+Matrix* Matrix::taylorMExp(Matrix* A, int k) {
 	double nfact = 1;
 	double coef;
-	Matrix matrixAn, term;
-	Matrix matrixB(numRows, numCols);
-	matrixB.setIdentity();
+	Matrix* An;
+	Matrix* T;
+	Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
+	R->setIdentity();
 	for (int n = 1; n <= k; n++) {
 		nfact *= n;
 		coef = 1.0 / nfact;
-		matrixAn = pow(n);
-		term = matrixAn.mul(coef);
-		matrixB = matrixB.add(term);
+		An = Matrix::pow(A, n);
+		T = Matrix::mul(An, coef);
+		R = Matrix::add(R, T);
 	}
-	return matrixB;
+	return R;
 }
 
-Matrix Matrix::padeMExp(int k) {
+Matrix* Matrix::padeMExp(Matrix* A, int k) {
 	double nfact = 1;
 	double coef;
-	Matrix matrixAn, term;
-	Matrix matrixB(numRows, numCols);
-	matrixB.setIdentity();
-	for (int n = 1; n <= k; n++) {
-		nfact *= n;
-		coef = 1.0 / nfact;
-		matrixAn = pow(n);
-		term = matrixAn.mul(coef);
-		matrixB = matrixB.add(term);
+	Matrix* An, T;
+	Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
+	R->setIdentity();
+	return R;
+}
+
+Matrix* Matrix::diagonalMExp(Matrix* A) {
+	Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
+	for (int c1 = 0; c1 < A->getNumRows(); c1++) {
+		R->setCell(c1, c1, exp(A->getCell(c1, c1)));
 	}
-	return matrixB;
+	return R;
 }
 
-Matrix Matrix::diagonalMExp() {
-	Matrix matrixB(*this);
-	for (int c1 = 0; c1 < numRows; c1++) {
-		matrixB.matrix[c1][c1] = exp(matrixB.matrix[c1][c1]);
-	}
-	return matrixB;
+Matrix* Matrix::zeroMExp(Matrix* A) {
+	Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
+	return R;
 }
 
-Matrix Matrix::zeroMExp() {
-	Matrix matrixB(*this);
-	return matrixB;
-}
-
-Matrix Matrix::mExp(int k, char method) {
-	if (initialised) {
+Matrix* Matrix::mExp(Matrix* A, char method, int k) {
+	if (A->initialised) {
 		// Special Cases
-		if (isDiagonal()) {
-			return diagonalMExp();
+		if (A->isDiagonal()) {
+			return diagonalMExp(A);
 		}
-		else if (isZero()) {
-			return zeroMExp();
+		else if (A->isZero()) {
+			return zeroMExp(A);
 		}
 		// Ordinary Cases
 		else {
 			switch (method) {
 				default:
-					return taylorMExp(k);
+					return taylorMExp(A, k);
 				case 't':
-					return taylorMExp(k);
+					return taylorMExp(A, k);
 				case 'p':
-					return padeMExp(k);
+					return padeMExp(A, k);
 			}
 		}
 	}
@@ -316,6 +321,10 @@ bool Matrix::isZero() {
 }
 
 // Getters
+
+double Matrix::getCell(int x, int y) {
+	return matrix[x][y];
+}
 
 int Matrix::getNumRows() {
 	if (initialised) {
