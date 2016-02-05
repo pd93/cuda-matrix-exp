@@ -91,20 +91,17 @@ int main(int argc, char **argv) {
 		G->printm();
 		printf("%.9f seconds\n", (float) (t)/CLOCKS_PER_SEC);
 
-		//// Create H
+		// Create H = e^I (Diagonal)
+		printf("\nCreate H = e^I (Diagonal) =\n");
+		t = clock();
+		Matrix* H = Matrix::mExp(I);
+		t = clock() - t;
+		H->printm();
+		printf("%.9f seconds\n", (float)(t) / CLOCKS_PER_SEC);
 
-
-		//// Create J = e^I (Diagonal)
-		//printf("\nCreate J = e^I (Diagonal) =\n");
-		//t = clock();
-		//Matrix matrixJ(matrixI.mExp(30));
-		//t = clock() - t;
-		//matrixJ.printm();
-		//printf("%.9f seconds\n", (float)(t) / CLOCKS_PER_SEC);
-
-		// Delete arrays and 
-		delete A, B, C, I;
-		A, B, C, I = nullptr;
+		// Delete arrays and set to nullptr
+		delete A, B, C, D1, D2, E, F, G, H, I;
+		A, B, C, D1, D2, E, F, G, H, I = nullptr;
 	}
 	catch (int e) {
 		printf("\n||||||||||||||||\n|| Error: %i ||\n||||||||||||||||\n", e);
