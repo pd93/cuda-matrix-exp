@@ -28,7 +28,7 @@ int main(int argc, char **argv) {
 		start = chrono::high_resolution_clock::now();
 		Matrix* A = new Matrix({
 			{ 1, 2, 3, 3, 1 },
-			{ 3, 2, 1 ,2, 3 },
+			{ 3, 2, 1, 2, 3 },
 			{ 1, 2, 3, 3, 1 },
 			{ 3, 2, 1 ,2, 3 },
 			{ 2, 1, 3 ,2, 1 }
@@ -65,10 +65,10 @@ int main(int argc, char **argv) {
 		start = chrono::high_resolution_clock::now();
 		Matrix* B = Matrix::add(A, R);
 		end = chrono::high_resolution_clock::now();
-		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count()/100000.0);
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << B;
 		cout << setprecision(5) << duration << " seconds" << endl;
-		
+
 		// Create C = A*3
 		cout << endl << "Create C = A*3" << endl;
 		start = chrono::high_resolution_clock::now();
@@ -128,8 +128,7 @@ int main(int argc, char **argv) {
 		// Delete arrays and set to nullptr
 		delete A, B, C, D, E, F, G, H, I, R;
 		A, B, C, D, E, F, G, H, I, R = nullptr;
-	}
-	catch (int e) {
+	} catch (int e) {
 		printf("\n||||||||||||||||\n|| Error: %i ||\n||||||||||||||||\n", e);
 	}
 

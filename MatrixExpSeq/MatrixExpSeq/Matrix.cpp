@@ -41,7 +41,7 @@ void Matrix::init(int inNumRows, int inNumCols) {
 	for (int i = 0; i < numRows; i++) {
 		matrix[i].resize(numCols);
 	}
-	initialised = true;	
+	initialised = true;
 	setZero();
 }
 
@@ -61,13 +61,11 @@ Matrix* Matrix::add(Matrix* A, Matrix* B) {
 				}
 			}
 			return R;
-		}
-		else {
+		} else {
 			// Error! Cannot add these matrices
 			throw (201);
 		}
-	}
-	else {
+	} else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
@@ -92,13 +90,11 @@ Matrix* Matrix::mul(Matrix* A, Matrix* B) {
 				}
 			}
 			return R;
-		}
-		else {
+		} else {
 			// Error! Cannot multiply these matrices together
 			throw (202);
 		}
-	}
-	else {
+	} else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
@@ -129,8 +125,7 @@ Matrix* Matrix::pow(Matrix* A, int x) {
 			R = Matrix::mul(A, R);
 		}
 		return R;
-	}
-	else {
+	} else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
@@ -181,8 +176,7 @@ Matrix* Matrix::mExp(Matrix* A, char method, int k) {
 		// Special Cases
 		if (A->isDiagonal()) {
 			return diagonalMExp(A);
-		}
-		else if (A->isZero()) {
+		} else if (A->isZero()) {
 			return zeroMExp(A);
 		}
 		// Ordinary Cases
@@ -196,8 +190,7 @@ Matrix* Matrix::mExp(Matrix* A, char method, int k) {
 					return padeMExp(A, k);
 			}
 		}
-	}
-	else {
+	} else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
@@ -213,12 +206,10 @@ const bool Matrix::isSquare() {
 	if (initialised) {
 		if (numCols == numRows) {
 			return true;
-		}
-		else {
+		} else {
 			return false;
 		}
-	}
-	else {
+	} else {
 		// Error! Cannot determine if matrix is square before initialisation
 		throw (105);
 	}
@@ -234,8 +225,7 @@ const bool Matrix::isDiagonal() {
 			}
 		}
 		return true;
-	}
-	else {
+	} else {
 		// Error! Cannot determine if matrix is diagonal before initialisation
 		throw (106);
 	}
@@ -251,8 +241,7 @@ const bool Matrix::isScalar() {
 			}
 		}
 		return true;
-	}
-	else {
+	} else {
 		// Error! Cannot determine if matrix is scalar before initialisation
 		throw (107);
 	}
@@ -268,8 +257,7 @@ const bool Matrix::isIdentity() {
 			}
 		}
 		return true;
-	}
-	else {
+	} else {
 		// Error! Cannot determine if matrix is an identity matrix before initialisation
 		throw (108);
 	}
@@ -285,8 +273,7 @@ const bool Matrix::isZero() {
 			}
 		}
 		return true;
-	}
-	else {
+	} else {
 		// Error! Cannot determine if matrix is a zero matrix before initialisation
 		throw (109);
 	}
@@ -301,8 +288,7 @@ const double Matrix::getCell(int x, int y) {
 const int Matrix::getNumRows() {
 	if (initialised) {
 		return numRows;
-	}
-	else {
+	} else {
 		// Error! Cannot determine number of rows in matrix before initialisation
 		throw (103);
 	}
@@ -311,8 +297,7 @@ const int Matrix::getNumRows() {
 const int Matrix::getNumCols() {
 	if (initialised) {
 		return numCols;
-	}
-	else {
+	} else {
 		// Error! Cannot determine number of columns in matrix before initialisation
 		throw (104);
 	}
@@ -371,7 +356,7 @@ void Matrix::setRandom(double min, double max) {
 	}
 }
 
-// Output
+// Operators
 
 std::ostream& operator<<(std::ostream& oStream, Matrix* A) {
 	if (A->isInitialised()) {

@@ -59,10 +59,9 @@ public:
 	void setZero();
 	void setIdentity();
 	void setRandom(double min, double max);
-	// Output
-	std::string toString(int precision = 3);
 };
 
+// Operators
 std::ostream& operator<< (std::ostream& stream, Matrix* A);
 
 #endif
