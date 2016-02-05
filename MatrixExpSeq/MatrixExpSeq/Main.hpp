@@ -10,6 +10,6 @@
 //
 
 #include "Matrix.hpp"
-#include <time.h>
+#include <chrono>
 
 int main(int argc, char **argv);

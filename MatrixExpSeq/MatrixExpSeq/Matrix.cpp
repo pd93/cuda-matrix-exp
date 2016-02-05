@@ -155,8 +155,9 @@ Matrix* Matrix::taylorMExp(Matrix* A, int k) {
 
 Matrix* Matrix::padeMExp(Matrix* A, int k) {
 	double nfact = 1;
-	double coef;
-	Matrix* An, T;
+	//double coef;
+	//Matrix* An;
+	//Matrix* T;
 	Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
 	R->setIdentity();
 	return R;
@@ -202,42 +203,13 @@ Matrix* Matrix::mExp(Matrix* A, char method, int k) {
 	}
 }
 
-void Matrix::setZero() {
-	if (initialised) {
-		for (int c1 = 0; c1 < numRows; c1++) {
-			for (int c2 = 0; c2 < numCols; c2++) {
-				matrix[c1][c2] = 0;
-			}
-		}
-	}
-	else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
-}
-
-void Matrix::setIdentity() {
-	if (initialised) {
-		for (int c1 = 0; c1 < numRows; c1++) {
-			for (int c2 = 0; c2 < numCols; c2++) {
-				if (c1 == c2) {
-					matrix[c1][c2] = 1;
-				}
-				else {
-					matrix[c1][c2] = 0;
-				}
-			}
-		}
-	}
-	else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
-}
-
 // Booleans
 
-bool Matrix::isSquare() {
+const bool Matrix::isInitialised() {
+	return initialised;
+}
+
+const bool Matrix::isSquare() {
 	if (initialised) {
 		if (numCols == numRows) {
 			return true;
@@ -252,7 +224,7 @@ bool Matrix::isSquare() {
 	}
 }
 
-bool Matrix::isDiagonal() {
+const bool Matrix::isDiagonal() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
@@ -269,7 +241,7 @@ bool Matrix::isDiagonal() {
 	}
 }
 
-bool Matrix::isScalar() {
+const bool Matrix::isScalar() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
@@ -286,7 +258,7 @@ bool Matrix::isScalar() {
 	}
 }
 
-bool Matrix::isIdentity() {
+const bool Matrix::isIdentity() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
@@ -303,7 +275,7 @@ bool Matrix::isIdentity() {
 	}
 }
 
-bool Matrix::isZero() {
+const bool Matrix::isZero() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
@@ -322,11 +294,11 @@ bool Matrix::isZero() {
 
 // Getters
 
-double Matrix::getCell(int x, int y) {
+const double Matrix::getCell(int x, int y) {
 	return matrix[x][y];
 }
 
-int Matrix::getNumRows() {
+const int Matrix::getNumRows() {
 	if (initialised) {
 		return numRows;
 	}
@@ -336,7 +308,7 @@ int Matrix::getNumRows() {
 	}
 }
 
-int Matrix::getNumCols() {
+const int Matrix::getNumCols() {
 	if (initialised) {
 		return numCols;
 	}
@@ -356,32 +328,73 @@ void Matrix::setCell(int row, int col, double value) {
 	matrix[row][col] = value;
 }
 
-// Output
-
-void Matrix::printm(int precision) {
+void Matrix::setZero() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
-			printf("|");
 			for (int c2 = 0; c2 < numCols; c2++) {
-				if (matrix[c1][c2] >= 0) {
-					if (abs(matrix[c1][c2] - (int) matrix[c1][c2]) > 0) {
-						// Decimal
-						printf(" %.*f", precision, matrix[c1][c2]);
-					}
-					else {
-						// Integer
-						printf(" %.0f", matrix[c1][c2]);
-					}
-				}
-				else {
-					printf(" -");
+				matrix[c1][c2] = 0;
+			}
+		}
+	} else {
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
+	}
+}
+
+void Matrix::setIdentity() {
+	if (initialised) {
+		for (int c1 = 0; c1 < numRows; c1++) {
+			for (int c2 = 0; c2 < numCols; c2++) {
+				if (c1 == c2) {
+					matrix[c1][c2] = 1;
+				} else {
+					matrix[c1][c2] = 0;
 				}
 			}
-			printf(" |\n");
+		}
+	} else {
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
+	}
+}
+
+void Matrix::setRandom(double min, double max) {
+	if (initialised) {
+		std::default_random_engine rng;
+		std::uniform_int_distribution<int> gen((int) floor(min), (int) floor(max));
+		for (int c1 = 0; c1 < numRows; c1++) {
+			for (int c2 = 0; c2 < numCols; c2++) {
+				int randomI = gen(rng);
+				matrix[c1][c2] = randomI;
+			}
 		}
 	}
-	else {
+}
+
+// Output
+
+std::ostream& operator<<(std::ostream& oStream, Matrix* A) {
+	if (A->isInitialised()) {
+		double cell;
+		for (int c1 = 0; c1 < A->getNumRows(); c1++) {
+			oStream << "|";
+			for (int c2 = 0; c2 < A->getNumCols(); c2++) {
+				cell = A->getCell(c1, c2);
+				if (abs(cell - (int) (cell) > 0)) {
+					// Decimal
+					oStream << " " << std::setprecision(3) << std::fixed << cell;
+				} else {
+					// Integer
+					oStream << " " << std::setprecision(0) << std::fixed << cell;
+				}
+			}
+			oStream << " |" << std::endl;
+		}
+		return oStream;
+	} else {
 		// Error! Cannot print matrix before initialisation
 		throw (102);
 	}
+
+	return oStream;
 }

@@ -14,6 +14,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <random>
+#include <iomanip>
 #include <math.h>
 
 class Matrix {
@@ -40,23 +42,27 @@ public:
 	static Matrix* mul(Matrix* A, double B);
 	static Matrix* pow(Matrix* A, int x);
 	static Matrix* mExp(Matrix* A, char method = ' ', int k = -1);
-	void setZero();
-	void setIdentity();
 	// Booleans
-	bool isSquare();
-	bool isDiagonal();
-	bool isScalar();
-	bool isIdentity();
-	bool isZero();
+	const bool isInitialised();
+	const bool isSquare();
+	const bool isDiagonal();
+	const bool isScalar();
+	const bool isIdentity();
+	const bool isZero();
 	// Getters
-	double getCell(int x, int y);
-	int getNumRows();
-	int getNumCols();
+	const double getCell(int x, int y);
+	const int getNumRows();
+	const int getNumCols();
 	// Setters
 	void setMatrix(std::vector<std::vector<double>> inMatrix);
 	void setCell(int row, int col, double value);
+	void setZero();
+	void setIdentity();
+	void setRandom(double min, double max);
 	// Output
-	void printm(int precision = 3);
+	std::string toString(int precision = 3);
 };
+
+std::ostream& operator<< (std::ostream& stream, Matrix* A);
 
 #endif

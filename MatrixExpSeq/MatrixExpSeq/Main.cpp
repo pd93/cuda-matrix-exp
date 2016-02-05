@@ -17,91 +17,117 @@ int main(int argc, char **argv) {
 
 	try {
 
-		clock_t t;
+		chrono::high_resolution_clock::time_point start;
+		chrono::high_resolution_clock::time_point end;
+		double duration;
+
+		cout << endl << "############################# Create Matrices #############################" << endl;
 
 		// Create A
-		cout << "\nCreate A =\n" << endl;
+		cout << endl << "Create A =" << endl;
+		start = chrono::high_resolution_clock::now();
 		Matrix* A = new Matrix({
-			{ 1, 2, 3 },
-			{ 3, 2, 1 },
-			{ 2, 1, 3 }
+			{ 1, 2, 3, 3, 1 },
+			{ 3, 2, 1 ,2, 3 },
+			{ 1, 2, 3, 3, 1 },
+			{ 3, 2, 1 ,2, 3 },
+			{ 2, 1, 3 ,2, 1 }
 		});
-		A->printm();
-
-		// Create B
-		cout << "\nCreate B =\n";
-		Matrix* B = new Matrix({
-			{ 1, 2, 3 },
-			{ 4, 5, 6 },
-			{ 7, 8, 9 }
-		});
-		B->printm();
+		end = chrono::high_resolution_clock::now();
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
+		cout << A;
+		cout << setprecision(5) << duration << " seconds" << endl;
 
 		// Create I (Identity)
-		cout << "\nCreate I (Identity) =\n";
-		Matrix* I = new Matrix(3, 3);
+		cout << endl << "Create I (Identity) =" << endl;
+		start = chrono::high_resolution_clock::now();
+		Matrix* I = new Matrix(5, 5);
 		I->setIdentity();
-		I->printm();
+		end = chrono::high_resolution_clock::now();
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
+		cout << I;
+		cout << setprecision(5) << duration << " seconds" << endl;
 
-		// Create C = A+B
-		printf("\nCreate C = A+B =\n");
-		t = clock();
-		Matrix* C = Matrix::add(A, B);
-		t = clock() - t;
-		C->printm();
-		printf("%.9f seconds\n", (float)(t) / CLOCKS_PER_SEC);
+		// Create R (Random 0-9)
+		cout << endl << "Create R (Random 0-9) =" << endl;
+		start = chrono::high_resolution_clock::now();
+		Matrix* R = new Matrix(5, 5);
+		R->setRandom(0, 9);
+		end = chrono::high_resolution_clock::now();
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
+		cout << R;
+		cout << setprecision(5) << duration << " seconds" << endl;
 
-		// Create D1 = A*3
-		printf("\nCreate D1 = A*3 =\n");
-		t = clock();
-		Matrix* D1 = Matrix::mul(A, 3);
-		t = clock() - t;
-		D1->printm();
-		printf("%.9f seconds\n", (float)(t) / CLOCKS_PER_SEC);
+		cout << endl << "############################# Basic Functions #############################" << endl;
 
-		// Create D2 = A*B
-		printf("\nCreate D2 = A*B =\n");
-		t = clock();
-		Matrix* D2 = Matrix::mul(A, B);
-		t = clock() - t;
-		D2->printm();
-		printf("%.9f seconds\n", (float)(t) / CLOCKS_PER_SEC);
+		// Create B = A+R
+		cout << endl << "Create B = A+R =" << endl;
+		start = chrono::high_resolution_clock::now();
+		Matrix* B = Matrix::add(A, R);
+		end = chrono::high_resolution_clock::now();
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count()/100000.0);
+		cout << B;
+		cout << setprecision(5) << duration << " seconds" << endl;
+		
+		// Create C = A*3
+		cout << endl << "Create C = A*3" << endl;
+		start = chrono::high_resolution_clock::now();
+		Matrix* C = Matrix::mul(A, 3);
+		end = chrono::high_resolution_clock::now();
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
+		cout << C;
+		cout << setprecision(5) << duration << " seconds" << endl;
 
-		// Create E = B^2
-		printf("\nCreate E = B^2 =\n");
-		t = clock();
-		Matrix* E = Matrix::pow(B, 2);
-		t = clock() - t;
-		E->printm();
-		printf("%.9f seconds\n", (float)(t) / CLOCKS_PER_SEC);
+		// Create D = A*R
+		cout << endl << "Create D = A*R =" << endl;
+		start = chrono::high_resolution_clock::now();
+		Matrix* D = Matrix::mul(A, R);
+		end = chrono::high_resolution_clock::now();
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
+		cout << D;
+		cout << setprecision(5) << duration << " seconds" << endl;
+
+		// Create E = A^2
+		cout << endl << "Create E = A^2 =" << endl;
+		start = chrono::high_resolution_clock::now();
+		Matrix* E = Matrix::pow(A, 2);
+		end = chrono::high_resolution_clock::now();
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
+		cout << E;
+		cout << setprecision(5) << duration << " seconds" << endl;
+
+		cout << endl << "############################# Matrix Exponentials #############################" << endl;
 
 		// Create F = e^A (Taylor) =
-		printf("\nCreate F = e^A (Taylor) =\n");
-		t = clock();
-		Matrix* F = Matrix::mExp(A, 't', 20);
-		t = clock() - t;
-		F->printm();
-		printf("%.9f seconds\n", (float)(t) / CLOCKS_PER_SEC);
+		cout << endl << "Create F = e^A (Taylor) =" << endl;
+		start = chrono::high_resolution_clock::now();
+		Matrix* F = Matrix::mExp(A, 't', 50);
+		end = chrono::high_resolution_clock::now();
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
+		cout << F;
+		cout << setprecision(5) << duration << " seconds" << endl;
 
 		// Create G = e^A (Pade) =
-		printf("\nCreate G = e^A (Pade) =\n");
-		t = clock();
+		cout << endl << "Create G = e^A (Pade) =" << endl;
+		start = chrono::high_resolution_clock::now();
 		Matrix* G = Matrix::mExp(A, 'p', 10);
-		t = clock() - t;
-		G->printm();
-		printf("%.9f seconds\n", (float) (t)/CLOCKS_PER_SEC);
+		end = chrono::high_resolution_clock::now();
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
+		cout << G;
+		cout << setprecision(5) << duration << " seconds" << endl;
 
 		// Create H = e^I (Diagonal)
-		printf("\nCreate H = e^I (Diagonal) =\n");
-		t = clock();
+		cout << endl << "Create H = e^I (Diagonal) =" << endl;
+		start = chrono::high_resolution_clock::now();
 		Matrix* H = Matrix::mExp(I);
-		t = clock() - t;
-		H->printm();
-		printf("%.9f seconds\n", (float)(t) / CLOCKS_PER_SEC);
+		end = chrono::high_resolution_clock::now();
+		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
+		cout << H;
+		cout << setprecision(5) << duration << " seconds" << endl;
 
 		// Delete arrays and set to nullptr
-		delete A, B, C, D1, D2, E, F, G, H, I;
-		A, B, C, D1, D2, E, F, G, H, I = nullptr;
+		delete A, B, C, D, E, F, G, H, I, R;
+		A, B, C, D, E, F, G, H, I, R = nullptr;
 	}
 	catch (int e) {
 		printf("\n||||||||||||||||\n|| Error: %i ||\n||||||||||||||||\n", e);
