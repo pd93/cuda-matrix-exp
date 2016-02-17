@@ -27,12 +27,14 @@ private:
 	// Internal Matrix Functions
 	static Matrix* taylorMExp(Matrix* A, int k);
 	static Matrix* padeMExp(Matrix* A, int k);
+	static void PadeApproximantOfDegree(int m, Matrix* A);
 	static double* getPadeCoefficients(int m);
 	static Matrix* diagonalMExp(Matrix* A);
 	static Matrix* zeroMExp(Matrix* A);
 public:
 	// Constructors
 	Matrix();
+	Matrix(int inNumRowsCols);
 	Matrix(int inNumRows, int inNumCols);
 	Matrix(std::vector<std::vector<double>> inMatrix);
 	Matrix(const Matrix &obj);

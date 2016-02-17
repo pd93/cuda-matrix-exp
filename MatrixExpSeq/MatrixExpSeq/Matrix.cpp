@@ -17,6 +17,10 @@ Matrix::Matrix() {
 	initialised = false;
 }
 
+Matrix::Matrix(int inNumRowsCols) {
+	init(inNumRowsCols, inNumRowsCols);
+}
+
 Matrix::Matrix(int inNumRows, int inNumCols) {
 	init(inNumRows, inNumCols);
 }
@@ -27,7 +31,6 @@ Matrix::Matrix(std::vector<std::vector<double>> inMatrix) {
 }
 
 Matrix::Matrix(const Matrix &obj) {
-	// COPY CONSTRUCTOR NOT COMPLETE
 	matrix = obj.matrix;
 	numRows = obj.numRows;
 	numCols = obj.numCols;
@@ -219,35 +222,44 @@ void Matrix::PadeApproximantOfDegree(int m, Matrix* A) {
 	// Pade approximant to EXP(A), where M = 3, 5, 7, 9 or 13.
 	// Series are evaluated in decreasing order of powers, which is
 	// in approx.increasing order of maximum norms of the terms.
-	int n = A.getNumRows();
-	double coef[] = getPadeCoefficients(m);
-	//classA = class(A);
-	//I = eye(n, classA);
+	int c1;
+	int n = A->getNumRows();
+	double* coef = getPadeCoefficients(m);
+	Matrix* I = new Matrix(n);
+	I->setIdentity();
+	Matrix* Apowers[14];
 	// Evaluate Pade approximant.
-	switch (m) {
-		case { 3, 5, 7, 9 }:
-			//Apowers = cell(ceil((m + 1) / 2), 1);
-			//Apowers{ 1 } = I;
-			//Apowers{ 2 } = A*A;
-			for j = 3 : ceil((m + 1) / 2) {
-				//Apowers{j} = Apowers{j-1}*Apowers{2};
-			}
-			int U = 0;
-			int V = 0;
-			for (j = m + 1 : -2 : 2) {
-				//U = U + c(j)*Apowers{j/2};
-			}
-			//U = A*U;
-			for (j = m : -2 : 1) {
-				//V = V + c(j)*Apowers{(j+1)/2};
-			}
-		case 13:
-			// For optimal evaluation need different formula for m >= 12.
-			//A2 = A*A; A4 = A2*A2; A6 = A2*A4;
-			//U = A * (A6*(c(14)*A6 + c(12)*A4 + c(10)*A2) + c(8)*A6 + c(6)*A4 + c(4)*A2 + c(2)*I);
-			//V = A6*(c(13)*A6 + c(11)*A4 + c(9)*A2) + c(7)*A6 + c(5)*A4 + c(3)*A2 + c(1)*I;
+	if (m == 3 || m == 5 || m == 7 || m == 9) {
+		Apowers[0] = new Matrix(ceil((m + 1) / 2), 1);
+		Apowers[1] = I;
+		Apowers[2] = Matrix::mul(A, A);
+		for (int c1 = 3; c1 < ceil((m + 1) / 2); c1++) {
+			Apowers[c1] = Matrix::mul(Apowers[c1-1], Apowers[2]);
+		}
+		Matrix* U = new Matrix(n);
+		Matrix* V = new Matrix(n);
+		U->setIdentity();
+		V->setIdentity();
+		for (int c1 = m + 1; c1 > -2; c1 -= 2) {
+			U = Matrix::add(U, Matrix::mul(Apowers[c1/2], coef[c1]));
+		}
+		U = Matrix::mul(A, U);
+		for (int j = m; j > -2; j--) {
+			V = Matrix::add(V, Matrix::mul(Apowers[(c1+1)/2], coef[c1]));
+		}
+	} 
+	else if (m == 13) {
+		// For optimal evaluation need different formula for m >= 12.
+		Matrix* A2 = Matrix::mul(A, A);
+		Matrix* A4 = Matrix::mul(A2, A2);
+		Matrix* A6 = Matrix::mul(A2, A4);
+		//Matrix* U = A * (A6*(coef[14]*A6 + coef[12]*A4 + coef[10]*A2) + coef[8]*A6 + coef[6]*A4 + coef[4]*A2 + coef[2]*I);
+		//Matrix* V = A6*(coef[13]*A6 + coef[11]*A4 + coef[9]*A2) + coef[7]*A6 + coef[5]*A4 + coef[3]*A2 + coef[1]*I;
 	}
-	//F = (V-U)\(2*U) + I; % (-U+V)\(U+V);
+	else {
+		// Do nothing
+	}
+	//Matrix* F = (V-U)\(2*U) + I; % (-U+V)\(U+V);
 }
 
 double* Matrix::getPadeCoefficients(int m) {
