@@ -48,7 +48,7 @@ void Matrix::init(int inNumRows, int inNumCols) {
 	setZero();
 }
 
-// Matrix Functions
+// Matrix Operations
 
 Matrix* Matrix::add(Matrix* A, Matrix* B) {
 	if (A->initialised && B->initialised) {
@@ -69,6 +69,32 @@ Matrix* Matrix::add(Matrix* A, Matrix* B) {
 			throw (201);
 		}
 	} else {
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
+	}
+}
+
+Matrix* Matrix::sub(Matrix* A, Matrix* B) {
+	if (A->initialised && B->initialised) {
+		int ar = A->getNumRows();
+		int ac = A->getNumCols();
+		int br = B->getNumRows();
+		int bc = B->getNumCols();
+		if (ar == br && ac == bc) {
+			Matrix *R = new Matrix(ar, ac);
+			for (int c1 = 0; c1 < ar; c1++) {
+				for (int c2 = 0; c2 < ac; c2++) {
+					R->setCell(c1, c2, A->getCell(c1, c2) - B->getCell(c1, c2));
+				}
+			}
+			return R;
+		}
+		else {
+			// Error! Cannot subtract these matrices
+			throw (201);
+		}
+	}
+	else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
@@ -118,6 +144,18 @@ Matrix* Matrix::mul(Matrix* A, double B) {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
+}
+
+Matrix* Matrix::div(Matrix* A, Matrix* B) {
+	return mul(A, Matrix::inv(B));
+}
+
+Matrix* Matrix::div(Matrix* A, double B) {
+	return mul(A, Matrix::inv(B));
+}
+
+Matrix* Matrix::inv(Matrix* A) {
+	return A;
 }
 
 Matrix* Matrix::pow(Matrix* A, int x) {
@@ -226,6 +264,8 @@ void Matrix::PadeApproximantOfDegree(int m, Matrix* A) {
 	int n = A->getNumRows();
 	double* coef = getPadeCoefficients(m);
 	Matrix* I = new Matrix(n);
+	Matrix* V;
+	Matrix* U;
 	I->setIdentity();
 	Matrix* Apowers[14];
 	// Evaluate Pade approximant.
@@ -236,8 +276,8 @@ void Matrix::PadeApproximantOfDegree(int m, Matrix* A) {
 		for (int c1 = 3; c1 < ceil((m + 1) / 2); c1++) {
 			Apowers[c1] = Matrix::mul(Apowers[c1-1], Apowers[2]);
 		}
-		Matrix* U = new Matrix(n);
-		Matrix* V = new Matrix(n);
+		U = new Matrix(n);
+		V = new Matrix(n);
 		U->setIdentity();
 		V->setIdentity();
 		for (int c1 = m + 1; c1 > -2; c1 -= 2) {
@@ -254,12 +294,29 @@ void Matrix::PadeApproximantOfDegree(int m, Matrix* A) {
 		Matrix* A4 = Matrix::mul(A2, A2);
 		Matrix* A6 = Matrix::mul(A2, A4);
 		//Matrix* U = A * (A6*(coef[14]*A6 + coef[12]*A4 + coef[10]*A2) + coef[8]*A6 + coef[6]*A4 + coef[4]*A2 + coef[2]*I);
+		Matrix* U = Matrix::mul(A, (Matrix::mul(A6, 
+			Matrix::add(Matrix::mul(A6, coef[14]),
+			Matrix::add(Matrix::mul(A4, coef[12]),
+			Matrix::add(Matrix::mul(A2, coef[10]),
+			Matrix::add(Matrix::mul(A6, coef[8]),
+			Matrix::add(Matrix::mul(A4, coef[6]),
+			Matrix::add(Matrix::mul(A2, coef[4]),
+			Matrix::mul(I, coef[2]))))))))));
 		//Matrix* V = A6*(coef[13]*A6 + coef[11]*A4 + coef[9]*A2) + coef[7]*A6 + coef[5]*A4 + coef[3]*A2 + coef[1]*I;
+		Matrix* V = Matrix::mul(A6, 
+			Matrix::add(Matrix::mul(A6, coef[13]),
+			Matrix::add(Matrix::mul(A4, coef[11]),
+			Matrix::add(Matrix::mul(A2, coef[9]), 
+			Matrix::add(Matrix::mul(A6, coef[7]), 
+			Matrix::add(Matrix::mul(A4, coef[5]), 
+			Matrix::add(Matrix::mul(A2, coef[3]), 
+			Matrix::mul(I, coef[1]))))))));
 	}
 	else {
 		// Do nothing
 	}
-	//Matrix* F = (V-U)\(2*U) + I; % (-U+V)\(U+V);
+	//Matrix* F = (V - U)\(2 * U) + I;
+	Matrix* F = Matrix::add(Matrix::div(Matrix::sub(V, U), (Matrix::mul(U, 2)), I));
 }
 
 double* Matrix::getPadeCoefficients(int m) {
@@ -315,6 +372,20 @@ Matrix* Matrix::mExp(Matrix* A, char method, int k) {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
+}
+
+// Matrix Functions
+
+double Matrix::det(Matrix* A) {
+
+}
+
+double Matrix::tran(Matrix* A) {
+
+}
+
+double Matrix::cofa(Matrix* A) {
+
 }
 
 // Booleans

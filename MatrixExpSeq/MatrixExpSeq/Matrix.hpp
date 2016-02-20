@@ -39,12 +39,20 @@ public:
 	Matrix(std::vector<std::vector<double>> inMatrix);
 	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
-	// Matrix Functions
+	// Matrix Operations
 	static Matrix* add(Matrix* A, Matrix* B);
+	static Matrix* sub(Matrix* A, Matrix* B);
 	static Matrix* mul(Matrix* A, Matrix* B);
 	static Matrix* mul(Matrix* A, double B);
+	static Matrix* div(Matrix* A, Matrix* B);
+	static Matrix* div(Matrix* A, double B);
+	static Matrix* inv(Matrix* A);
 	static Matrix* pow(Matrix* A, int x);
 	static Matrix* mExp(Matrix* A, char method = ' ', int k = -1);
+	// Matrix Functions
+	static double det(Matrix* A);
+	static double tran(Matrix* A);
+	static double cofa(Matrix* A);
 	// Booleans
 	const bool isInitialised();
 	const bool isSquare();
