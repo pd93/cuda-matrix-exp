@@ -28,7 +28,7 @@ private:
 	static Matrix* taylorMExp(Matrix* A, int k);
 	static Matrix* padeMExp(Matrix* A, int k);
 	static void PadeApproximantOfDegree(int m, Matrix* A);
-	static double* getPadeCoefficients(int m);
+	static std::vector<double> getPadeCoefficients(int m);
 	static Matrix* diagonalMExp(Matrix* A);
 	static Matrix* zeroMExp(Matrix* A);
 public:
@@ -36,7 +36,7 @@ public:
 	Matrix();
 	Matrix(int inNumRowsCols);
 	Matrix(int inNumRows, int inNumCols);
-	Matrix(std::vector<std::vector<double>>, int inNumRows, int inNumCols);
+	Matrix(std::vector<std::vector<double>>);
 	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
 	// Matrix Operations
@@ -51,10 +51,6 @@ public:
 	static Matrix* inv(Matrix* A);
 	static Matrix* pow(Matrix* A, int x);
 	static Matrix* mExp(Matrix* A, char method = ' ', int k = -1);
-	// Matrix Functions
-	static double det(Matrix* A);
-	static double tran(Matrix* A);
-	static double cofa(Matrix* A);
 	// Booleans
 	const bool isInitialised();
 	const bool isSquare();

@@ -25,8 +25,8 @@ Matrix::Matrix(int inNumRows, int inNumCols) {
 	init(inNumRows, inNumCols);
 }
 
-Matrix::Matrix(std::vector<std::vector<double>> inMatrix, int inNumRows, int inNumCols) {
-	init(inNumRows, inNumCols);
+Matrix::Matrix(std::vector<std::vector<double>> inMatrix) {
+	init(inMatrix.size(), inMatrix[0].size());
 	setMatrix(inMatrix);
 }
 
@@ -193,7 +193,7 @@ Matrix* Matrix::inv(Matrix* A) {
 		if (ar == ac) {
 			Matrix *R = new Matrix(ar, ac);
 			int c1, c2, c3, c4, c5, minDim, pivot;
-			double tmp;
+			double tmp, scale;
 			// find minimum dimension
 			if (ar < ac) {
 				minDim = ar;
@@ -204,33 +204,33 @@ Matrix* Matrix::inv(Matrix* A) {
 				pivot = 0;
 				for (c2 = c1; c2 < ac; c2++) {
 					if (std::abs(A->getCell(c2, c1)) > pivot) {
-						pivot = std::abs(A->getCell(c2, c1));
+						pivot = c2;
 					}
 				}
 				if (A->getCell(pivot, c1) != 0) {
-					//swap rows(c1, i_max);
+					// Swap rows 'c1' and 'i_max'
 					for (c3 = 0; c3 < ac; c3++) {
 						tmp = A->getCell(c1, c3);
 						A->setCell(c1, c3, A->getCell(pivot, c3));
 						A->setCell(pivot, c3, tmp);
 					}
-					// Do for all rows below pivot:
+					// For each row below the pivot
 					for (c4 = c1; c4 < ac; c4++) {
-						ac = A->getCell(c4, c1) / A->getCell(c1, c1);
-						// Do for all remaining elements in current row:
+						scale = A->getCell(c4, c1) / A->getCell(c1, c1);
+						// For each remaining element in the current row
 						for (c5 = c1; c5 < ar; c5++) {
-							A->setCell(c4, c5, A->getCell(c4, c5) - A->getCell(c1, c5) * ac);
+							A->setCell(c4, c5, A->getCell(c4, c5) - A->getCell(c1, c5) * scale);
 						}
-						// Fill lower triangular matrix with zeros:
+						// Fill the lower triangle with zeros:
 						A->setCell(c4, c1, 0);
 					}
 				} else {
 					// Error! Cannot find the inverse of this matrix
+					std::cout << "test";
 					throw (205);
 				}
 			}
-
-			return R;
+			return A;
 		} else {
 			// Error! Cannot find the inverse of this matrix
 			throw (205);
@@ -345,29 +345,31 @@ void Matrix::PadeApproximantOfDegree(int m, Matrix* A) {
 	// in approx.increasing order of maximum norms of the terms.
 	int c1;
 	int n = A->getNumRows();
-	double* coef = getPadeCoefficients(m);
+	std::vector<double> coef = getPadeCoefficients(m);
 	Matrix* I = new Matrix(n);
+	I->setIdentity();
 	Matrix* V;
 	Matrix* U;
-	I->setIdentity();
 	Matrix* Apowers[14];
 	// Evaluate Pade approximant.
 	if (m == 3 || m == 5 || m == 7 || m == 9) {
-		Apowers[0] = new Matrix(ceil((m + 1) / 2), 1);
-		Apowers[1] = I;
+		//Apowers[0] = new Matrix(ceil((m + 1) / 2), 1);
+		//Apowers[1] = I;
+		Apowers[0] = new Matrix(*I);
+		Apowers[1] = new Matrix(*A);
 		Apowers[2] = Matrix::mul(A, A);
-		for (int c1 = 3; c1 < ceil((m + 1) / 2); c1++) {
+		for (c1 = 3; c1 < ceil((m + 1) / 2); c1++) {
 			Apowers[c1] = Matrix::mul(Apowers[c1-1], Apowers[2]);
 		}
 		U = new Matrix(n);
 		V = new Matrix(n);
 		U->setIdentity();
 		V->setIdentity();
-		for (int c1 = m + 1; c1 > -2; c1 -= 2) {
+		for (c1 = m + 1; c1 > -2; c1 -= 2) {
 			U = Matrix::add(U, Matrix::mul(coef[c1], Apowers[c1 / 2]));
 		}
 		U = Matrix::mul(A, U);
-		for (int j = m; j > -2; j--) {
+		for (c1 = m; c1 > -2; c1--) {
 			V = Matrix::add(V, Matrix::mul(coef[c1], Apowers[(c1 + 1) / 2]));
 		}
 	} 
@@ -402,19 +404,19 @@ void Matrix::PadeApproximantOfDegree(int m, Matrix* A) {
 	Matrix* F = Matrix::add(Matrix::div(Matrix::sub(V, U), (Matrix::mul(2, U))), I);
 }
 
-double* Matrix::getPadeCoefficients(int m) {
-	double* coef;
+std::vector<double> Matrix::getPadeCoefficients(int m) {
+	std::vector<double> coef;
 	switch (m) {
 		case 3:
-			double coef[] = { 120, 60, 12, 1 };
+			coef = { 120, 60, 12, 1 };
 		case 5:
-			double coef[] = { 30240, 15120, 3360, 420, 30, 1 };
+			coef = { 30240, 15120, 3360, 420, 30, 1 };
 		case 7:
-			double coef[] = { 17297280, 8648640, 1995840, 277200, 25200, 1512, 56, 1 };
+			coef = { 17297280, 8648640, 1995840, 277200, 25200, 1512, 56, 1 };
 		case 9:
-			double coef[] = { 17643225600, 8821612800, 2075673600, 302702400, 30270240,	2162160, 110880, 3960, 90, 1 };
+			coef = { 17643225600, 8821612800, 2075673600, 302702400, 30270240,	2162160, 110880, 3960, 90, 1 };
 		case 13:
-			double coef[] = { 64764752532480000, 32382376266240000, 7771770303897600, 1187353796428800, 129060195264000, 10559470521600, 670442572800, 33522128640, 1323241920, 40840800, 960960, 16380, 182, 1 };
+			coef = { 64764752532480000, 32382376266240000, 7771770303897600, 1187353796428800, 129060195264000, 10559470521600, 670442572800, 33522128640, 1323241920, 40840800, 960960, 16380, 182, 1 };
 	}
 	return coef;
 }
@@ -455,20 +457,6 @@ Matrix* Matrix::mExp(Matrix* A, char method, int k) {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
-}
-
-// Matrix Functions
-
-double Matrix::det(Matrix* A) {
-
-}
-
-double Matrix::tran(Matrix* A) {
-
-}
-
-double Matrix::cofa(Matrix* A) {
-
 }
 
 // Booleans

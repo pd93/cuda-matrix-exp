@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 		// Create C = A*3
 		cout << endl << "Create C = A*3" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* C = Matrix::mul(A, 3);
+		Matrix* C = Matrix::mul(3, A);
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << C;
@@ -107,10 +107,21 @@ int main(int argc, char **argv) {
 		cout << F;
 		cout << setprecision(5) << duration << " seconds" << endl;
 
+
+
+		// Create TEMPORARY Z =
+		Matrix* Z = new Matrix({
+			{ 1, 3, 3 },
+			{ 2, 2, 2 },
+			{ 2, 3, 1 }
+		});
+
+
 		// Create G = e^A (Pade) =
 		cout << endl << "Create G = e^A (Pade) =" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* G = Matrix::mExp(A, 'p', 10);
+		//Matrix* G = Matrix::mExp(A, 'p', 10);
+		Matrix* G = Matrix::inv(Z);
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << G;
