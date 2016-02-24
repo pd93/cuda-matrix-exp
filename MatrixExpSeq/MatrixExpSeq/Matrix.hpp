@@ -36,16 +36,18 @@ public:
 	Matrix();
 	Matrix(int inNumRowsCols);
 	Matrix(int inNumRows, int inNumCols);
-	Matrix(std::vector<std::vector<double>> inMatrix);
+	Matrix(std::vector<std::vector<double>>, int inNumRows, int inNumCols);
 	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
 	// Matrix Operations
 	static Matrix* add(Matrix* A, Matrix* B);
+	static Matrix* add(Matrix* A, double x);
 	static Matrix* sub(Matrix* A, Matrix* B);
+	static Matrix* sub(Matrix* A, double x);
 	static Matrix* mul(Matrix* A, Matrix* B);
-	static Matrix* mul(Matrix* A, double B);
+	static Matrix* mul(double x, Matrix* A);
 	static Matrix* div(Matrix* A, Matrix* B);
-	static Matrix* div(Matrix* A, double B);
+	static Matrix* div(double x, Matrix* A);
 	static Matrix* inv(Matrix* A);
 	static Matrix* pow(Matrix* A, int x);
 	static Matrix* mExp(Matrix* A, char method = ' ', int k = -1);
@@ -65,6 +67,8 @@ public:
 	const int getNumRows();
 	const int getNumCols();
 	// Setters
+	void setNumRows(int inNumRows);
+	void setNumCols(int inNumCols);
 	void setMatrix(std::vector<std::vector<double>> inMatrix);
 	void setCell(int row, int col, double value);
 	void setZero();

@@ -13,4 +13,7 @@
 2XX - Matrix errors
 
 201 - Cannot add these matrices together
-202 - Cannot multiply these matrices together
+202 - Cannot subtract these matrices
+203 - Cannot multiply these matrices together
+204 - Cannot divide these matrices
+205 - Cannot find the inverse of this matrix

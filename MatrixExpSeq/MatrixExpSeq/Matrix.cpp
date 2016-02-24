@@ -25,8 +25,8 @@ Matrix::Matrix(int inNumRows, int inNumCols) {
 	init(inNumRows, inNumCols);
 }
 
-Matrix::Matrix(std::vector<std::vector<double>> inMatrix) {
-	init((int) inMatrix.size(), (int) inMatrix[0].size());
+Matrix::Matrix(std::vector<std::vector<double>> inMatrix, int inNumRows, int inNumCols) {
+	init(inNumRows, inNumCols);
 	setMatrix(inMatrix);
 }
 
@@ -38,8 +38,8 @@ Matrix::Matrix(const Matrix &obj) {
 }
 
 void Matrix::init(int inNumRows, int inNumCols) {
-	numRows = inNumRows;
-	numCols = inNumCols;
+	setNumRows(inNumRows);
+	setNumCols(inNumCols);
 	matrix.resize(numRows);
 	for (int i = 0; i < numRows; i++) {
 		matrix[i].resize(numCols);
@@ -74,6 +74,23 @@ Matrix* Matrix::add(Matrix* A, Matrix* B) {
 	}
 }
 
+Matrix* Matrix::add(Matrix* A, double x) {
+	if (A->initialised) {
+		int ar = A->getNumRows();
+		int ac = A->getNumCols();
+		Matrix *R = new Matrix(ar, ac);
+		for (int c1 = 0; c1 < ar; c1++) {
+			for (int c2 = 0; c2 < ac; c2++) {
+				R->setCell(c1, c2, A->getCell(c1, c2) + x);
+			}
+		}
+		return R;
+	} else {
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
+	}
+}
+
 Matrix* Matrix::sub(Matrix* A, Matrix* B) {
 	if (A->initialised && B->initialised) {
 		int ar = A->getNumRows();
@@ -88,13 +105,28 @@ Matrix* Matrix::sub(Matrix* A, Matrix* B) {
 				}
 			}
 			return R;
-		}
-		else {
+		} else {
 			// Error! Cannot subtract these matrices
 			throw (201);
 		}
+	} else {
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
 	}
-	else {
+}
+
+Matrix* Matrix::sub(Matrix* A, double x) {
+	if (A->initialised) {
+		int ar = A->getNumRows();
+		int ac = A->getNumCols();
+		Matrix *R = new Matrix(ar, ac);
+		for (int c1 = 0; c1 < ar; c1++) {
+			for (int c2 = 0; c2 < ac; c2++) {
+				R->setCell(c1, c2, A->getCell(c1, c2) - x);
+			}
+		}
+		return R;
+	} else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
@@ -121,7 +153,7 @@ Matrix* Matrix::mul(Matrix* A, Matrix* B) {
 			return R;
 		} else {
 			// Error! Cannot multiply these matrices together
-			throw (202);
+			throw (203);
 		}
 	} else {
 		// Error! Cannot perform matrix operations before initialisation
@@ -129,14 +161,14 @@ Matrix* Matrix::mul(Matrix* A, Matrix* B) {
 	}
 }
 
-Matrix* Matrix::mul(Matrix* A, double B) {
+Matrix* Matrix::mul(double x, Matrix* A) {
 	if (A->initialised) {
 		int ar = A->getNumRows();
 		int ac = A->getNumCols();
 		Matrix* R = new Matrix(ar, ac);
 		for (int c1 = 0; c1 < ar; c1++) {
 			for (int c2 = 0; c2 < ac; c2++) {
-				R->setCell(c1, c2, A->getCell(c1, c2) * B);
+				R->setCell(c1, c2, A->getCell(c1, c2) * x);
 			}
 		}
 		return R;
@@ -150,12 +182,63 @@ Matrix* Matrix::div(Matrix* A, Matrix* B) {
 	return mul(A, Matrix::inv(B));
 }
 
-Matrix* Matrix::div(Matrix* A, double B) {
-	return mul(A, Matrix::inv(B));
+Matrix* Matrix::div(double x, Matrix* A) {
+	return mul(x, Matrix::inv(A));
 }
 
 Matrix* Matrix::inv(Matrix* A) {
-	return A;
+	if (A->initialised) {
+		int ar = A->getNumRows();
+		int ac = A->getNumCols();
+		if (ar == ac) {
+			Matrix *R = new Matrix(ar, ac);
+			int c1, c2, c3, c4, c5, minDim, pivot;
+			double tmp;
+			// find minimum dimension
+			if (ar < ac) {
+				minDim = ar;
+			} else {
+				minDim = ac;
+			}
+			for (c1 = 0; c1 < minDim; c1++) {
+				pivot = 0;
+				for (c2 = c1; c2 < ac; c2++) {
+					if (std::abs(A->getCell(c2, c1)) > pivot) {
+						pivot = std::abs(A->getCell(c2, c1));
+					}
+				}
+				if (A->getCell(pivot, c1) != 0) {
+					//swap rows(c1, i_max);
+					for (c3 = 0; c3 < ac; c3++) {
+						tmp = A->getCell(c1, c3);
+						A->setCell(c1, c3, A->getCell(pivot, c3));
+						A->setCell(pivot, c3, tmp);
+					}
+					// Do for all rows below pivot:
+					for (c4 = c1; c4 < ac; c4++) {
+						ac = A->getCell(c4, c1) / A->getCell(c1, c1);
+						// Do for all remaining elements in current row:
+						for (c5 = c1; c5 < ar; c5++) {
+							A->setCell(c4, c5, A->getCell(c4, c5) - A->getCell(c1, c5) * ac);
+						}
+						// Fill lower triangular matrix with zeros:
+						A->setCell(c4, c1, 0);
+					}
+				} else {
+					// Error! Cannot find the inverse of this matrix
+					throw (205);
+				}
+			}
+
+			return R;
+		} else {
+			// Error! Cannot find the inverse of this matrix
+			throw (205);
+		}
+	} else {
+		// Error! Cannot perform matrix operations before initialisation
+		throw (101);
+	}
 }
 
 Matrix* Matrix::pow(Matrix* A, int x) {
@@ -183,7 +266,7 @@ Matrix* Matrix::taylorMExp(Matrix* A, int k) {
 		nfact *= n;
 		coef = 1.0 / nfact;
 		An = Matrix::pow(A, n);
-		T = Matrix::mul(An, coef);
+		T = Matrix::mul(coef, An);
 		R = Matrix::add(R, T);
 	}
 	return R;
@@ -281,11 +364,11 @@ void Matrix::PadeApproximantOfDegree(int m, Matrix* A) {
 		U->setIdentity();
 		V->setIdentity();
 		for (int c1 = m + 1; c1 > -2; c1 -= 2) {
-			U = Matrix::add(U, Matrix::mul(Apowers[c1/2], coef[c1]));
+			U = Matrix::add(U, Matrix::mul(coef[c1], Apowers[c1 / 2]));
 		}
 		U = Matrix::mul(A, U);
 		for (int j = m; j > -2; j--) {
-			V = Matrix::add(V, Matrix::mul(Apowers[(c1+1)/2], coef[c1]));
+			V = Matrix::add(V, Matrix::mul(coef[c1], Apowers[(c1 + 1) / 2]));
 		}
 	} 
 	else if (m == 13) {
@@ -295,28 +378,28 @@ void Matrix::PadeApproximantOfDegree(int m, Matrix* A) {
 		Matrix* A6 = Matrix::mul(A2, A4);
 		//Matrix* U = A * (A6*(coef[14]*A6 + coef[12]*A4 + coef[10]*A2) + coef[8]*A6 + coef[6]*A4 + coef[4]*A2 + coef[2]*I);
 		Matrix* U = Matrix::mul(A, (Matrix::mul(A6, 
-			Matrix::add(Matrix::mul(A6, coef[14]),
-			Matrix::add(Matrix::mul(A4, coef[12]),
-			Matrix::add(Matrix::mul(A2, coef[10]),
-			Matrix::add(Matrix::mul(A6, coef[8]),
-			Matrix::add(Matrix::mul(A4, coef[6]),
-			Matrix::add(Matrix::mul(A2, coef[4]),
-			Matrix::mul(I, coef[2]))))))))));
+			Matrix::add(Matrix::mul(coef[14], A6),
+			Matrix::add(Matrix::mul(coef[12], A4),
+			Matrix::add(Matrix::mul(coef[10], A2),
+			Matrix::add(Matrix::mul(coef[8], A6),
+			Matrix::add(Matrix::mul(coef[6], A4),
+			Matrix::add(Matrix::mul(coef[4], A2),
+			Matrix::mul(coef[2], I))))))))));
 		//Matrix* V = A6*(coef[13]*A6 + coef[11]*A4 + coef[9]*A2) + coef[7]*A6 + coef[5]*A4 + coef[3]*A2 + coef[1]*I;
 		Matrix* V = Matrix::mul(A6, 
-			Matrix::add(Matrix::mul(A6, coef[13]),
-			Matrix::add(Matrix::mul(A4, coef[11]),
-			Matrix::add(Matrix::mul(A2, coef[9]), 
-			Matrix::add(Matrix::mul(A6, coef[7]), 
-			Matrix::add(Matrix::mul(A4, coef[5]), 
-			Matrix::add(Matrix::mul(A2, coef[3]), 
-			Matrix::mul(I, coef[1]))))))));
+			Matrix::add(Matrix::mul(coef[13], A6),
+			Matrix::add(Matrix::mul(coef[11], A4),
+			Matrix::add(Matrix::mul(coef[9], A2), 
+			Matrix::add(Matrix::mul(coef[7], A6), 
+			Matrix::add(Matrix::mul(coef[5], A4), 
+			Matrix::add(Matrix::mul(coef[3], A2), 
+			Matrix::mul(coef[1], I))))))));
 	}
 	else {
 		// Do nothing
 	}
 	//Matrix* F = (V - U)\(2 * U) + I;
-	Matrix* F = Matrix::add(Matrix::div(Matrix::sub(V, U), (Matrix::mul(U, 2)), I));
+	Matrix* F = Matrix::add(Matrix::div(Matrix::sub(V, U), (Matrix::mul(2, U))), I);
 }
 
 double* Matrix::getPadeCoefficients(int m) {
@@ -496,6 +579,14 @@ const int Matrix::getNumCols() {
 }
 
 // Setters
+
+void Matrix::setNumRows(int inNumRows) {
+	numRows = inNumRows;
+}
+
+void Matrix::setNumCols(int inNumCols) {
+	numCols = inNumCols;
+}
 
 void Matrix::setMatrix(std::vector<std::vector<double>> inMatrix) {
 	matrix = inMatrix;

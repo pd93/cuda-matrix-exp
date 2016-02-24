@@ -110,6 +110,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="inverse.c" />
     <ClCompile Include="Main.cpp" />
     <ClCompile Include="Matrix.cpp" />
   </ItemGroup>
