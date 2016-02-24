@@ -191,46 +191,103 @@ Matrix* Matrix::inv(Matrix* A) {
 		int ar = A->getNumRows();
 		int ac = A->getNumCols();
 		if (ar == ac) {
-			Matrix *R = new Matrix(ar, ac);
-			int c1, c2, c3, c4, c5, minDim, pivot;
-			double tmp, scale;
-			// find minimum dimension
-			if (ar < ac) {
-				minDim = ar;
-			} else {
-				minDim = ac;
-			}
-			for (c1 = 0; c1 < minDim; c1++) {
-				pivot = 0;
-				for (c2 = c1; c2 < ac; c2++) {
-					if (std::abs(A->getCell(c2, c1)) > pivot) {
-						pivot = c2;
+			// Init
+			Matrix* P = new Matrix(ar, ac*2);
+			Matrix* R = new Matrix(ar, ac);
+			int c1, c2, c3;
+			int n = ac;
+			double cell, tmp;
+			// Copy A into P (Left side)
+			for (c1 = 0; c1 < n; c1++) {
+				for (c2 = 0; c2 < n; c2++) {
+					P->setCell(c1, c2, A->getCell(c1, c2));
+					if (c1 == c2) {
+						P->setCell(c1, c2 + n, 1);
 					}
 				}
-				if (A->getCell(pivot, c1) != 0) {
-					// Swap rows 'c1' and 'i_max'
-					for (c3 = 0; c3 < ac; c3++) {
-						tmp = A->getCell(c1, c3);
-						A->setCell(c1, c3, A->getCell(pivot, c3));
-						A->setCell(pivot, c3, tmp);
+			}
+			std::cout << P << std::endl;
+			// Pivot P
+			for (c1 = n - 1; c1 > 0; c1--) {
+				if (P->getCell(c1 - 1, 0) < P->getCell(c1, 0)) {
+					for (c2 = 0; c2 < n * 2; c2++) {
+						tmp = P->getCell(c1, c2);
+						P->setCell(c1, c2, P->getCell(c1 - 1, c2));
+						P->setCell(c1 - 1, c2, tmp);
 					}
-					// For each row below the pivot
-					for (c4 = c1; c4 < ac; c4++) {
-						scale = A->getCell(c4, c1) / A->getCell(c1, c1);
-						// For each remaining element in the current row
-						for (c5 = c1; c5 < ar; c5++) {
-							A->setCell(c4, c5, A->getCell(c4, c5) - A->getCell(c1, c5) * scale);
+				}
+			}
+			std::cout << P << std::endl;
+			// Reduce to diagonal matrix
+			for (c1 = 0; c1 < n * 2; c1++) {
+				for (c2 = 0; c2 < n; c2++) {
+					if (c2 != c1 && c1 < n) {
+						//std::cout << c1 << ", " << c2 << std::endl;
+						tmp = P->getCell(c2, c1) / P->getCell(c1, c1);
+						//std::cout << P;
+						for (c3 = 0; c3 < n * 2; c3++) {
+							cell = P->getCell(c2, c3) - (P->getCell(c1, c3) * tmp);
+							P->setCell(c2, c3, cell);
 						}
-						// Fill the lower triangle with zeros:
-						A->setCell(c4, c1, 0);
 					}
-				} else {
-					// Error! Cannot find the inverse of this matrix
-					std::cout << "test";
-					throw (205);
 				}
 			}
-			return A;
+			std::cout << P << std::endl;
+			// Reduce to unit matrix
+			for (c1 = 0; c1 < n; c1++) {
+				tmp = P->getCell(c1, c1);
+				for (c2 = 0; c2 < n * 2; c2++) {
+					P->setCell(c1, c2, P->getCell(c1, c2) / tmp);
+				}
+			}
+			std::cout << P << std::endl;
+			// Copy P (Right side) to R
+			for (c1 = 0; c1 < n; c1++) {
+				for (c2 = 0; c2 < n; c2++) {
+					R->setCell(c1, c2, P->getCell(c1, c2 + n));
+				}
+			}
+
+
+			//int c1, c2, c3, c4, c5, minDim, pivot;
+			//double tmp, scale;
+			//// find minimum dimension
+			//if (ar < ac) {
+			//	minDim = ar;
+			//} else {
+			//	minDim = ac;
+			//}
+			//for (c1 = 0; c1 < minDim; c1++) {
+			//	pivot = 0;
+			//	for (c2 = c1; c2 < ac; c2++) {
+			//		if (std::abs(R->getCell(c2, c1)) > pivot) {
+			//			pivot = c2;
+			//		}
+			//	}
+			//	std::cout << R << " (" << pivot << ", " << c1 << ")" << std::endl;
+			//	if (R->getCell(pivot, c1) != 0) {
+			//		// Swap rows 'c1' and 'pivot'
+			//		for (c3 = 0; c3 < ac; c3++) {
+			//			tmp = R->getCell(c1, c3);
+			//			R->setCell(c1, c3, R->getCell(pivot, c3));
+			//			R->setCell(pivot, c3, tmp);
+			//		}
+			//		// For each row below the pivot
+			//		for (c4 = c1; c4 < ac; c4++) {
+			//			scale = R->getCell(c4, c1) / R->getCell(c1, c1);
+			//			// For each remaining element in the current row
+			//			for (c5 = c1; c5 < ar; c5++) {
+			//				R->setCell(c4, c5, R->getCell(c4, c5) - R->getCell(c1, c5) * scale);
+			//			}
+			//			// Fill the lower triangle with zeros:
+			//			R->setCell(c4, c1, 0);
+			//		}
+			//	} else {
+			//		// Error! Cannot find the inverse of this matrix
+			//		throw (205);
+			//	}
+			//}
+			return R;
 		} else {
 			// Error! Cannot find the inverse of this matrix
 			throw (205);
