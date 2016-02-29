@@ -14,6 +14,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <complex>
 #include <random>
 #include <iomanip>
 #include <math.h>
@@ -21,14 +22,18 @@
 class Matrix {
 private:
 	// Variables
-	std::vector<std::vector<double>> matrix;
+	std::vector<std::vector<std::complex<double>>> matrix;
 	int numRows, numCols;
 	bool initialised;
 	// Internal Matrix Functions
 	static Matrix* taylorMExp(Matrix* A, int k);
 	static Matrix* padeMExp(Matrix* A, int k);
-	static void PadeApproximantOfDegree(int m, Matrix* A);
-	static std::vector<double> getPadeCoefficients(int m);
+	//static void PadeApproximantOfDegree(int m, Matrix* A);
+	static int getPadeParams(Matrix* A);
+	static std::complex<double> max(std::complex<double> x, std::complex<double> y);
+	static std::complex<double> min(std::complex<double> x, std::complex<double> y);
+	static double ell(Matrix* A, std::vector<std::complex<double>> coef, int m);
+	static std::vector<std::complex<double>> getPadeCoefficients(int m);
 	static Matrix* diagonalMExp(Matrix* A);
 	static Matrix* zeroMExp(Matrix* A);
 public:
@@ -36,7 +41,7 @@ public:
 	Matrix();
 	Matrix(int inNumRowsCols);
 	Matrix(int inNumRows, int inNumCols);
-	Matrix(std::vector<std::vector<double>>);
+	Matrix(std::vector<std::vector<std::complex<double>>>);
 	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
 	// Matrix Operations
@@ -59,14 +64,14 @@ public:
 	const bool isIdentity();
 	const bool isZero();
 	// Getters
-	const double getCell(int x, int y);
+	const std::complex<double> getCell(int x, int y);
 	const int getNumRows();
 	const int getNumCols();
 	// Setters
 	void setNumRows(int inNumRows);
 	void setNumCols(int inNumCols);
-	void setMatrix(std::vector<std::vector<double>> inMatrix);
-	void setCell(int row, int col, double value);
+	void setMatrix(std::vector<std::vector<std::complex<double>>> inMatrix);
+	void setCell(int row, int col, std::complex<double>);
 	void setZero();
 	void setIdentity();
 	void setRandom(double min, double max);
