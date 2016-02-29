@@ -27,12 +27,12 @@ int main(int argc, char **argv) {
 		cout << endl << "Create A =" << endl;
 		start = chrono::high_resolution_clock::now();
 		Matrix* A = new Matrix({
-			{ 1, 2, 3, 3, 1 },
-			{ 3, 2, 1, 2, 3 },
-			{ 1, 2, 3, 3, 1 },
-			{ 3, 2, 1 ,2, 3 },
-			{ 2, 1, 3 ,2, 1 }
-		});
+			1, 2, 3, 3, 1,
+			3, 2, 1, 2, 3,
+			1, 2, 3, 3, 1,
+			3, 2, 1 ,2, 3,
+			2, 1, 3 ,2, 1
+		}, 5);
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << A;
@@ -111,10 +111,10 @@ int main(int argc, char **argv) {
 
 		// Create TEMPORARY Z =
 		Matrix* Z = new Matrix({
-			{ 1, 3, 3 },
-			{ 2, 2, 2 },
-			{ 2, 3, 1 }
-		});
+			1, 3, 3,
+			2, 2, 2,
+			2, 3, 1
+		}, 3);
 
 
 		// Create G = e^A (Pade) =

@@ -22,7 +22,7 @@
 class Matrix {
 private:
 	// Variables
-	std::vector<std::vector<std::complex<double>>> matrix;
+	std::vector<std::complex<double>> matrix;
 	int numRows, numCols;
 	bool initialised;
 	// Internal Matrix Functions
@@ -33,6 +33,7 @@ private:
 	static std::complex<double> max(std::complex<double> x, std::complex<double> y);
 	static std::complex<double> min(std::complex<double> x, std::complex<double> y);
 	static double ell(Matrix* A, std::vector<std::complex<double>> coef, int m);
+	static std::complex<double> oneNorm(Matrix* A);
 	static std::vector<std::complex<double>> getPadeCoefficients(int m);
 	static Matrix* diagonalMExp(Matrix* A);
 	static Matrix* zeroMExp(Matrix* A);
@@ -41,7 +42,8 @@ public:
 	Matrix();
 	Matrix(int inNumRowsCols);
 	Matrix(int inNumRows, int inNumCols);
-	Matrix(std::vector<std::vector<std::complex<double>>>);
+	Matrix(std::vector<std::complex<double>> inMatrix, int inNumRows, int inNumCols);
+	Matrix(std::vector<std::complex<double>> inMatrix, int inNumRowsCols);
 	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
 	// Matrix Operations
@@ -64,13 +66,15 @@ public:
 	const bool isIdentity();
 	const bool isZero();
 	// Getters
-	const std::complex<double> getCell(int x, int y);
+	const std::complex<double> getCell(int x);
+	const std::complex<double> getCell(int row, int col);
 	const int getNumRows();
 	const int getNumCols();
 	// Setters
 	void setNumRows(int inNumRows);
 	void setNumCols(int inNumCols);
-	void setMatrix(std::vector<std::vector<std::complex<double>>> inMatrix);
+	void setMatrix(std::vector<std::complex<double>> inMatrix);
+	void setCell(int x, std::complex<double>);
 	void setCell(int row, int col, std::complex<double>);
 	void setZero();
 	void setIdentity();

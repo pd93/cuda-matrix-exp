@@ -25,8 +25,13 @@ Matrix::Matrix(int inNumRows, int inNumCols) {
 	init(inNumRows, inNumCols);
 }
 
-Matrix::Matrix(std::vector<std::vector<std::complex<double>>> inMatrix) {
-	init(inMatrix.size(), inMatrix[0].size());
+Matrix::Matrix(std::vector<std::complex<double>> inMatrix, int inNumRows, int inNumCols) {
+	init(inNumRows, inNumCols);
+	setMatrix(inMatrix);
+}
+
+Matrix::Matrix(std::vector<std::complex<double>> inMatrix, int inNumRowsCols) {
+	init(inNumRowsCols, inNumRowsCols);
 	setMatrix(inMatrix);
 }
 
@@ -40,10 +45,7 @@ Matrix::Matrix(const Matrix &obj) {
 void Matrix::init(int inNumRows, int inNumCols) {
 	setNumRows(inNumRows);
 	setNumCols(inNumCols);
-	matrix.resize(numRows);
-	for (int i = 0; i < numRows; i++) {
-		matrix[i].resize(numCols);
-	}
+	matrix.resize(numRows*numCols);
 	initialised = true;
 	setZero();
 }
@@ -58,10 +60,8 @@ Matrix* Matrix::add(Matrix* A, Matrix* B) {
 		int bc = B->getNumCols();
 		if (ar == br && ac == bc) {
 			Matrix *R = new Matrix(ar, ac);
-			for (int c1 = 0; c1 < ar; c1++) {
-				for (int c2 = 0; c2 < ac; c2++) {
-					R->setCell(c1, c2, A->getCell(c1, c2) + B->getCell(c1, c2));
-				}
+			for (int c1 = 0; c1 < ar*ac; c1++) {
+				R->setCell(c1, A->getCell(c1) + B->getCell(c1));
 			}
 			return R;
 		} else {
@@ -79,10 +79,8 @@ Matrix* Matrix::add(Matrix* A, double x) {
 		int ar = A->getNumRows();
 		int ac = A->getNumCols();
 		Matrix *R = new Matrix(ar, ac);
-		for (int c1 = 0; c1 < ar; c1++) {
-			for (int c2 = 0; c2 < ac; c2++) {
-				R->setCell(c1, c2, A->getCell(c1, c2) + x);
-			}
+		for (int c1 = 0; c1 < ar*ac; c1++) {
+			R->setCell(c1, A->getCell(c1) + x);
 		}
 		return R;
 	} else {
@@ -99,10 +97,8 @@ Matrix* Matrix::sub(Matrix* A, Matrix* B) {
 		int bc = B->getNumCols();
 		if (ar == br && ac == bc) {
 			Matrix *R = new Matrix(ar, ac);
-			for (int c1 = 0; c1 < ar; c1++) {
-				for (int c2 = 0; c2 < ac; c2++) {
-					R->setCell(c1, c2, A->getCell(c1, c2) - B->getCell(c1, c2));
-				}
+			for (int c1 = 0; c1 < ar*ac; c1++) {
+				R->setCell(c1, A->getCell(c1) - B->getCell(c1));
 			}
 			return R;
 		} else {
@@ -120,10 +116,8 @@ Matrix* Matrix::sub(Matrix* A, double x) {
 		int ar = A->getNumRows();
 		int ac = A->getNumCols();
 		Matrix *R = new Matrix(ar, ac);
-		for (int c1 = 0; c1 < ar; c1++) {
-			for (int c2 = 0; c2 < ac; c2++) {
-				R->setCell(c1, c2, A->getCell(c1, c2) - x);
-			}
+		for (int c1 = 0; c1 < ar*ac; c1++) {
+			R->setCell(c1, A->getCell(c1) - x);
 		}
 		return R;
 	} else {
@@ -479,6 +473,12 @@ double Matrix::ell(Matrix* A, std::vector<std::complex<double>> coef, int m) {
 	//Matrix* scaledA = coef. ^ (1 / (2 * m_val + 1)).*abs(T);
 	//alpha = normAm(scaledA, 2 * m_val + 1) / oneNorm(T);
 	//t = max(ceil(log2(2 * alpha / eps(class(alpha))) / (2 * m_val)), 0);
+	return 0;
+}
+
+std::complex<double> Matrix::oneNorm(Matrix* A) {
+	std::complex<double> test(0, 0);
+	return test;
 }
 
 int Matrix::getPadeParams(Matrix* A) {
@@ -551,7 +551,8 @@ int Matrix::getPadeParams(Matrix* A) {
 	//	[t, s] = log2(oneNorm(A) / theta.end());
 	//	s = s - (t == 0.5); //adjust s if normA / theta(end) is a power of 2.
 	//}
-	//m = 13;
+	m = 13;
+	return m;
 }
 
 std::vector<std::complex<double>> Matrix::getPadeCoefficients(int m) {
@@ -632,7 +633,7 @@ const bool Matrix::isDiagonal() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
-				if (c1 != c2 && matrix[c1][c2].real() != 0) {
+				if (c1 != c2 && getCell(c1, c2).real() != 0) {
 					return false;
 				}
 			}
@@ -648,7 +649,7 @@ const bool Matrix::isScalar() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
-				if ((c1 != c2 && matrix[c1][c2].real() != 0) || (c1 == c2 && matrix[c1][c2] != matrix[0][0])) {
+				if ((c1 != c2 && getCell(c1, c2).real() != 0) || (c1 == c2 && getCell(c1, c2) != getCell(0, 0))) {
 					return false;
 				}
 			}
@@ -664,7 +665,7 @@ const bool Matrix::isIdentity() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
-				if ((c1 != c2 && matrix[c1][c2].real() != 0) || (c1 == c2 && matrix[c1][c2].real() != 1)) {
+				if ((c1 != c2 && getCell(c1, c2).real() != 0) || (c1 == c2 && getCell(c1, c2).real() != 1)) {
 					return false;
 				}
 			}
@@ -680,7 +681,7 @@ const bool Matrix::isZero() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
-				if (matrix[c1][c2].real() != 0) {
+				if (getCell(c1, c2).real() != 0) {
 					return false;
 				}
 			}
@@ -694,8 +695,12 @@ const bool Matrix::isZero() {
 
 // Getters
 
-const std::complex<double> Matrix::getCell(int x, int y) {
-	return matrix[x][y];
+const std::complex<double> Matrix::getCell(int x) {
+	return matrix[x];
+}
+
+const std::complex<double> Matrix::getCell(int row, int col) {
+	return matrix[row*numCols+col];
 }
 
 const int Matrix::getNumRows() {
@@ -726,20 +731,22 @@ void Matrix::setNumCols(int inNumCols) {
 	numCols = inNumCols;
 }
 
-void Matrix::setMatrix(std::vector<std::vector<std::complex<double>>> inMatrix) {
+void Matrix::setMatrix(std::vector<std::complex<double>> inMatrix) {
 	matrix = inMatrix;
 }
 
+void Matrix::setCell(int x, std::complex<double> value) {
+	matrix[x] = value;
+}
+
 void Matrix::setCell(int row, int col, std::complex<double> value) {
-	matrix[row][col] = value;
+	matrix[row*numCols+col] = value;
 }
 
 void Matrix::setZero() {
 	if (initialised) {
-		for (int c1 = 0; c1 < numRows; c1++) {
-			for (int c2 = 0; c2 < numCols; c2++) {
-				matrix[c1][c2] = 0;
-			}
+		for (int c1 = 0; c1 < numRows*numCols; c1++) {
+			setCell(c1, 0);
 		}
 	} else {
 		// Error! Cannot perform matrix operations before initialisation
@@ -752,9 +759,9 @@ void Matrix::setIdentity() {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
 				if (c1 == c2) {
-					matrix[c1][c2] = 1;
+					setCell(c1, c2, 1);
 				} else {
-					matrix[c1][c2] = 0;
+					setCell(c1, c2, 0);
 				}
 			}
 		}
@@ -768,11 +775,9 @@ void Matrix::setRandom(double min, double max) {
 	if (initialised) {
 		std::default_random_engine rng;
 		std::uniform_int_distribution<int> gen((int) floor(min), (int) floor(max));
-		for (int c1 = 0; c1 < numRows; c1++) {
-			for (int c2 = 0; c2 < numCols; c2++) {
-				int randomI = gen(rng);
-				matrix[c1][c2] = randomI;
-			}
+		for (int c1 = 0; c1 < numRows*numCols; c1++) {
+			int randomI = gen(rng);
+			setCell(c1, randomI);
 		}
 	}
 }
