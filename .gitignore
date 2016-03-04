@@ -3,6 +3,9 @@
 
 # STUFF I'VE ADDED
 *.VC.opendb
+*.sln
+*.vcxproj
+*.vcxproj.filters
 #
 
 # User-specific files
