@@ -26,18 +26,18 @@
 
 class Matrix {
 public:
-	// Structures
+	// STRUCTURES
 	struct params {
 		int scale;
 		int mVal;
 		std::vector<Matrix> powers;
 	};
 private:
-	// Variables
+	// VARIABLES
 	std::vector<std::complex<double>> matrix;
 	int numRows, numCols;
 	bool initialised;
-	// Internal Matrix Operations
+	// INTERNAL MATRIX OPERATIONS
 	static Matrix& taylorMExp(Matrix& A, int k);
 	static Matrix& padeMExp(Matrix& A);
 	static int ell(Matrix& A, double coef, int m);
@@ -46,7 +46,7 @@ private:
 	static Matrix& diagonalMExp(Matrix& A);
 	static Matrix& zeroMExp(Matrix& A);
 public:
-	// Constructors
+	// CONSTRUCTORS
 	Matrix();
 	Matrix(int inNumRowsCols);
 	Matrix(int inNumRows, int inNumCols);
@@ -54,7 +54,7 @@ public:
 	Matrix(std::vector<std::complex<double>> inMatrix, int inNumRows, int inNumCols);
 	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
-	// Matrix Operations
+	// INTERNAL MATRIX OPERATIONS
 	static Matrix& add(Matrix& A, Matrix& B);
 	static Matrix& add(Matrix& A, double x);
 	static Matrix& sub(Matrix& A, Matrix& B);
@@ -66,7 +66,7 @@ public:
 	static Matrix& inv(Matrix& A);
 	static Matrix& pow(Matrix& A, int x);
 	static Matrix& mExp(Matrix& A, char method = ' ', int k = -1);
-	// Booleans
+	// BOOLEANS
 	const bool isInitialised();
 	const bool isSquare();
 	const bool isDiagonal();
@@ -74,55 +74,56 @@ public:
 	const bool isIdentity();
 	const bool isZero();
 	const bool isSmall();
-	// Getters
+	// GETTERS
 	const std::complex<double> getCell(int x);
 	const std::complex<double> getCell(int row, int col);
 	const int getNumRows();
 	const int getNumCols();
 	const double getNorm(int n = 2);
-	// Setters
+	// SETTERS
+	void setCell(int x, std::complex<double>);
+	void setCell(int row, int col, std::complex<double>);
 	void setNumRows(int inNumRows);
 	void setNumCols(int inNumCols);
 	void setMatrix(std::vector<std::complex<double>> inMatrix);
-	void setCell(int x, std::complex<double>);
-	void setCell(int row, int col, std::complex<double>);
 	void setZero();
 	void setIdentity();
 	void setRandom(double min, double max);
 };
 
-// General Functions
+// GENERAL FUNCTIONS
 static int max(int x, int y);
 static double max(double x, double y);
 static int min(int x, int y);
 static double min(double x, double y);
 
-// Operators
+// OPERATOR OVERRIDES
+// <<
 std::ostream& operator<< (std::ostream& stream, Matrix& A);
-
+// +
 Matrix& operator+(Matrix& A, Matrix& B);
 Matrix& operator+(Matrix& A, double B);
 Matrix& operator+(double A, Matrix& B);
-
+// +=
 Matrix& operator+=(Matrix& A, Matrix& B);
 Matrix& operator+=(Matrix& A, double B);
-
+// -
 Matrix& operator-(Matrix& A, Matrix& B);
 Matrix& operator-(Matrix& A, double B);
-
+// -=
 Matrix& operator-=(Matrix& A, Matrix& B);
 Matrix& operator-=(Matrix& A, double B);
-
+// *
 Matrix& operator*(Matrix& A, Matrix& B);
 Matrix& operator*(Matrix& A, double B);
 Matrix& operator*(double A, Matrix& B);
-
+// *=
 Matrix& operator*=(Matrix& A, Matrix& B);
 Matrix& operator*=(Matrix& A, double B);
-
+// /
 Matrix& operator/(Matrix& A, Matrix& B);
 Matrix& operator/(Matrix& A, double B);
-
+// /=
 Matrix& operator/=(Matrix& A, Matrix& B);
 Matrix& operator/=(Matrix& A, double B);
 

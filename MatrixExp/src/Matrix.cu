@@ -9,9 +9,10 @@
 // Moderator:  Dr. Irena Spasic
 //
 
+// Include header file
 #include "Matrix.cuh"
 
-// Constructors
+// CONSTRUCTORS
 
 // Default constructor. Creates an uninitialsed instance of a matrix
 Matrix::Matrix() {
@@ -51,7 +52,193 @@ void Matrix::init(int inNumRows, int inNumCols) {
 	setZero();
 }
 
-// Matrix Operations
+// INTERNAL MATRIX OPERATIONS
+
+// Finds the exponential of a matrix using the Taylor Series
+Matrix& Matrix::taylorMExp(Matrix& A, int k) {
+	double nfact = 1;
+	double coef;
+	Matrix An;
+	Matrix T;
+	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
+	R->setIdentity();
+	for (int n = 1; n <= k; n++) {
+		nfact *= n;
+		coef = 1.0 / nfact;
+		An = Matrix::pow(A, n);
+		T = Matrix::mul(coef, An);
+		*R = Matrix::add(*R, T);
+	}
+	return *R;
+}
+// Finds the exponential of a matrix using the Pade Approximation
+Matrix& Matrix::padeMExp(Matrix& A) {
+	// Get params
+	params params = getPadeParams(A);
+	double s = params.scale;
+	int m = params.mVal;
+	std::vector<Matrix> p = params.powers;
+	std::vector<double> c = getPadeCoefficients(m);
+	// Init
+	int c1, c2;
+	int n = max(A.getNumRows(), A.getNumCols());
+	Matrix* R = new Matrix(A);
+	Matrix U;
+	Matrix V;
+	Matrix I(A.getNumRows(), A.getNumCols());
+	I.setIdentity();
+	// Scaling
+	if (s != 0) {
+		//A = A / (2.^s);
+		//powers = cellfun(@rdivide, powers, ...
+		//num2cell(2. ^ (s * (1:length(powers)))), 'UniformOutput', false);
+	}
+	// Evaluate the Pade approximant.
+	if (m == 3 || m == 5 || m == 7 || m == 9) {
+		for (c1 = (int) (p.size()) + 2; c1 < m - 1; c1 += 2) { //for (k = strt:2:m-1)
+			p[c1] = p[c1 - 2] * p[2];
+		}
+		U = c[1] * I;
+		V = c[0] * I;
+		for (c2 = m; c2 >= 3; c2 -= 2) { //for (j = m : -2 : 3)
+			U += (c[c2] * p[c2 - 1]);
+			V += (c[c2 - 1] * p[c2 - 1]);
+		}
+		U *= A;
+	} else if (m == 13) {
+		U = A * (p[6] * (c[13] * p[6] + c[11] * p[4] + c[9] * p[2]) + c[7] * p[6] + c[5] * p[4] + c[3] * p[2] + c[1] * I);
+		V = p[6] * (c[12] * p[6] + c[10] * p[4] + c[8] * p[2]) + c[6] * p[6] + c[4] * p[4] + c[2] * p[2] + c[0] * I;
+	}
+	A = (V - U) / (2 * U) + I; //*R = (-U + V) / (U + V);
+	//if (recomputeDiags) {
+	//	*R = recompute_block_diag(A, *R, blockformat);
+	//}
+	//// Squaring phase.
+	//for (int k = 0; k < s; k++) {
+	//	*R = *R**R;
+	//	if (recomputeDiags) {
+	//		A = 2 * A;
+	//		*R = recompute_block_diag(A, *R, blockformat);
+	//	}
+	//}
+	return A;
+}
+// Something to do with pade scaling                                   NEEDS AMMENDING
+int Matrix::ell(Matrix& A, double coef, int m) {
+	//Matrix* scaledA = coef. ^ (1 / (2 * m_val + 1)).*abs(T);
+	//alpha = normAm(scaledA, 2 * m_val + 1) / oneNorm(T);
+	//t = max(ceil(log2(2 * alpha / eps(class(alpha))) / (2 * m_val)), 0);
+	return 0;
+}
+// Gets the parameters needed for the pade approximation
+Matrix::params Matrix::getPadeParams(Matrix& A) {
+	params p;
+	int d4, d6, d8, d10;
+	int eta1, eta3, eta4, eta5;
+	std::vector<double> coef, theta;
+	p.powers.resize(7);
+	p.scale = 0;
+	coef = {
+		(1 / 100800),
+		(1 / 10059033600),
+		(1 / 4487938430976000),
+		(1 / 9999999999999999999), // Substitute
+		(1 / 9999999999999999999)  // Values
+		//(1 / 5914384781877411840000LL), // Too long
+		//(1 / 113250775606021113483283660800000000)
+	};
+	theta = {
+		3.650024139523051e-008,
+		5.317232856892575e-004,
+		1.495585217958292e-002,
+		8.536352760102745e-002,
+		2.539398330063230e-001,
+		5.414660951208968e-001,
+		9.504178996162932e-001,
+		1.473163964234804e+000,
+		2.097847961257068e+000,
+		2.811644121620263e+000,
+		3.602330066265032e+000,
+		4.458935413036850e+000,
+		5.371920351148152e+000
+	};
+	p.powers[2] = Matrix::mul(A, A);
+	p.powers[4] = Matrix::mul(p.powers[2], p.powers[2]);
+	p.powers[6] = Matrix::mul(p.powers[2], p.powers[4]);
+	d4 = (int) (std::pow(p.powers[4].getNorm(1), (1 / 4)));
+	d6 = (int) (std::pow(p.powers[6].getNorm(1), (1 / 6)));
+	eta1 = max(d4, d6);
+	if (eta1 <= theta[1] && ell(A, coef[1], 3) == 0) {
+		p.mVal = 3;
+		return p;
+	}
+	if (eta1 <= theta[2] && ell(A, coef[2], 5) == 0) {
+		p.mVal = 5;
+		return p;
+	}
+	if (A.isSmall()) {
+		d8 = (int) ((p.powers[4] * p.powers[4]).getNorm(1));
+		d8 = (int) (d8 ^ (1 / 8));
+	} else {
+		//d8 = normAm(powers[4], 2) ^ (1 / 8);
+	}
+	eta3 = max(d6, d8);
+	if (eta3 <= theta[3] && ell(A, coef[3], 7) == 0) {
+		p.mVal = 7;
+		return p;
+	}
+	if (eta3 <= theta[4] && ell(A, coef[4], 9) == 0) {
+		p.mVal = 9;
+		return p;
+	}
+	if (A.isSmall()) {
+		d10 = (int) (std::pow((p.powers[4] * p.powers[6]).getNorm(1), 1.0 / 10));
+	} else {
+		//d10 = normAm(powers[2], 5) ^ (1 / 10);
+	}
+	eta4 = max(d8, d10);
+	eta5 = min(eta3, eta4);
+	p.scale = max((int) (ceil(log2(eta5 / theta[5]))), 0);
+	//p.scale += ell(pow((A / 2), p.scale), coef[5], 13);
+	if (p.scale == INFINITY) {
+		//[t, s] = log2(norm(A, 1) / theta.end());
+		//s = s - (t == 0.5); //adjust s if normA / theta(end) is a power of 2.
+	}
+	p.mVal = 13;
+	return p;
+}
+// Gets the coefficients needed for the pade approximation
+std::vector<double> Matrix::getPadeCoefficients(int m) {
+	std::vector<double> coef;
+	switch (m) {
+		case 3:
+			coef = { 120, 60, 12, 1 };
+		case 5:
+			coef = { 30240, 15120, 3360, 420, 30, 1 };
+		case 7:
+			coef = { 17297280, 8648640, 1995840, 277200, 25200, 1512, 56, 1 };
+		case 9:
+			coef = { 17643225600, 8821612800, 2075673600, 302702400, 30270240, 2162160, 110880, 3960, 90, 1 };
+		case 13:
+			coef = { 64764752532480000, 32382376266240000, 7771770303897600, 1187353796428800, 129060195264000, 10559470521600, 670442572800, 33522128640, 1323241920, 40840800, 960960, 16380, 182, 1 };
+	}
+	return coef;
+}
+// Finds the exponential of a diagonal matrix
+Matrix& Matrix::diagonalMExp(Matrix& A) {
+	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
+	for (int c1 = 0; c1 < A.getNumRows(); c1++) {
+		R->setCell(c1, c1, exp(A.getCell(c1, c1)));
+	}
+	return *R;
+}
+// Finds the exponential of a zero matrix
+Matrix& Matrix::zeroMExp(Matrix& A) {
+	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
+	return *R;
+}
+
+// EXTERNAL MATRIX OPERATIONS
 
 // Adds two matrices together
 Matrix& Matrix::add(Matrix& A, Matrix& B) {
@@ -181,7 +368,7 @@ Matrix& Matrix::div(Matrix& A, Matrix& B) {
 Matrix& Matrix::div(Matrix& A, double x) {
 	return mul((1 / x), A);
 }
-
+// Finds the inverse of a matrix
 Matrix& Matrix::inv(Matrix& A) {
 	if (A.initialised) {
 		int ar = A.getNumRows();
@@ -249,7 +436,7 @@ Matrix& Matrix::inv(Matrix& A) {
 		throw (101);
 	}
 }
-
+// Finds the nth power of a matrix
 Matrix& Matrix::pow(Matrix& A, int x) {
 	//if (A.initialised) {
 	//	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
@@ -264,190 +451,7 @@ Matrix& Matrix::pow(Matrix& A, int x) {
 	//}
 	return A;
 }
-
-Matrix& Matrix::taylorMExp(Matrix& A, int k) {
-	double nfact = 1;
-	double coef;
-	Matrix An;
-	Matrix T;
-	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
-	R->setIdentity();
-	for (int n = 1; n <= k; n++) {
-		nfact *= n;
-		coef = 1.0 / nfact;
-		An = Matrix::pow(A, n);
-		T = Matrix::mul(coef, An);
-		*R = Matrix::add(*R, T);
-	}
-	return *R;
-}
-
-Matrix& Matrix::padeMExp(Matrix& A) {
-	// Get params
-	params params = getPadeParams(A);
-	double s = params.scale;
-	int m = params.mVal;
-	std::vector<Matrix> p = params.powers;
-	std::vector<double> c = getPadeCoefficients(m);
-	// Init
-	int c1, c2;
-	int n = max(A.getNumRows(), A.getNumCols());
-	Matrix* R = new Matrix(A);
-	Matrix U;
-	Matrix V;
-	Matrix I(A.getNumRows(), A.getNumCols());
-	I.setIdentity();
-	// Scaling
-	if (s != 0) {
-		//A = A / (2.^s);
-		//powers = cellfun(@rdivide, powers, ...
-		//num2cell(2. ^ (s * (1:length(powers)))), 'UniformOutput', false);
-	}
-	// Evaluate the Pade approximant.
-	if (m == 3 || m == 5 || m == 7 || m == 9) {
-		for (c1 = (int) (p.size()) + 2; c1 < m - 1; c1 += 2) { //for (k = strt:2:m-1)
-			p[c1] = p[c1-2] * p[2];
-		}
-		U = c[1] * I;
-		V = c[0] * I;
-		for (c2 = m; c2 >= 3; c2 -= 2) { //for (j = m : -2 : 3)
-			U += (c[c2] * p[c2 - 1]);
-			V += (c[c2-1] * p[c2 - 1]);
-		}
-		U *= A;
-	} else if (m == 13) {
-		U = A * (p[6] * (c[13] * p[6] + c[11] * p[4] + c[9] * p[2]) + c[7] * p[6] + c[5] * p[4] + c[3] * p[2] + c[1] * I);
-		V = p[6] * (c[12] * p[6] + c[10] * p[4] + c[8] * p[2]) + c[6] * p[6] + c[4] * p[4] + c[2] * p[2] + c[0] * I;
-	}
-	A = (V - U) / (2 * U) + I; //*R = (-U + V) / (U + V);
-	//if (recomputeDiags) {
-	//	*R = recompute_block_diag(A, *R, blockformat);
-	//}
-	//// Squaring phase.
-	//for (int k = 0; k < s; k++) {
-	//	*R = *R**R;
-	//	if (recomputeDiags) {
-	//		A = 2 * A;
-	//		*R = recompute_block_diag(A, *R, blockformat);
-	//	}
-	//}
-	return A;
-}
-
-int Matrix::ell(Matrix& A, double coef, int m) {
-	//Matrix* scaledA = coef. ^ (1 / (2 * m_val + 1)).*abs(T);
-	//alpha = normAm(scaledA, 2 * m_val + 1) / oneNorm(T);
-	//t = max(ceil(log2(2 * alpha / eps(class(alpha))) / (2 * m_val)), 0);
-	return 0;
-}
-
-Matrix::params Matrix::getPadeParams(Matrix& A) {
-	params p;
-	int d4, d6, d8, d10;
-	int eta1, eta3, eta4, eta5;
-	std::vector<double> coef, theta;
-	p.powers.resize(7);
-	p.scale = 0;
-	coef = {
-		(1 / 100800),
-		(1 / 10059033600),
-		(1 / 4487938430976000),
-		(1 / 9999999999999999999), // Substitute
-		(1 / 9999999999999999999)  // Values
-		//(1 / 5914384781877411840000LL), // Too long
-		//(1 / 113250775606021113483283660800000000)
-	};
-	theta = {
-		3.650024139523051e-008,
-		5.317232856892575e-004,
-		1.495585217958292e-002,
-		8.536352760102745e-002,
-		2.539398330063230e-001,
-		5.414660951208968e-001,
-		9.504178996162932e-001,
-		1.473163964234804e+000,
-		2.097847961257068e+000,
-		2.811644121620263e+000,
-		3.602330066265032e+000,
-		4.458935413036850e+000,
-		5.371920351148152e+000
-	};
-	p.powers[2] = Matrix::mul(A, A);
-	p.powers[4] = Matrix::mul(p.powers[2], p.powers[2]);
-	p.powers[6] = Matrix::mul(p.powers[2], p.powers[4]);
-	d4 = (int) (std::pow(p.powers[4].getNorm(1), (1 / 4)));
-	d6 = (int) (std::pow(p.powers[6].getNorm(1), (1 / 6)));
-	eta1 = max(d4, d6);
-	if (eta1 <= theta[1] && ell(A, coef[1], 3) == 0) {
-		p.mVal = 3;
-		return p;
-	}
-	if (eta1 <= theta[2] && ell(A, coef[2], 5) == 0) {
-		p.mVal = 5;
-		return p;
-	}
-	if (A.isSmall()) {
-		d8 = (int) ((p.powers[4] * p.powers[4]).getNorm(1));
-		d8 = (int) (d8 ^ (1 / 8));
-	} else {
-		//d8 = normAm(powers[4], 2) ^ (1 / 8);
-	}
-	eta3 = max(d6, d8);
-	if (eta3 <= theta[3] && ell(A, coef[3], 7) == 0) {
-		p.mVal = 7;
-		return p;
-	}
-	if (eta3 <= theta[4] && ell(A, coef[4], 9) == 0) {
-		p.mVal = 9;
-		return p;
-	}
-	if (A.isSmall()) {
-		d10 = (int) (std::pow((p.powers[4] * p.powers[6]).getNorm(1), 1.0 / 10));
-	} else {
-		//d10 = normAm(powers[2], 5) ^ (1 / 10);
-	}
-	eta4 = max(d8, d10);
-	eta5 = min(eta3, eta4);
-	p.scale = max( (int) (ceil(log2(eta5 / theta[5]))), 0);
-	//p.scale += ell(pow((A / 2), p.scale), coef[5], 13);
-	if (p.scale == INFINITY) {
-		//[t, s] = log2(norm(A, 1) / theta.end());
-		//s = s - (t == 0.5); //adjust s if normA / theta(end) is a power of 2.
-	}
-	p.mVal = 13;
-	return p;
-}
-
-std::vector<double> Matrix::getPadeCoefficients(int m) {
-	std::vector<double> coef;
-	switch (m) {
-		case 3:
-			coef = { 120, 60, 12, 1 };
-		case 5:
-			coef = { 30240, 15120, 3360, 420, 30, 1 };
-		case 7:
-			coef = { 17297280, 8648640, 1995840, 277200, 25200, 1512, 56, 1 };
-		case 9:
-			coef = { 17643225600, 8821612800, 2075673600, 302702400, 30270240,	2162160, 110880, 3960, 90, 1 };
-		case 13:
-			coef = { 64764752532480000, 32382376266240000, 7771770303897600, 1187353796428800, 129060195264000, 10559470521600, 670442572800, 33522128640, 1323241920, 40840800, 960960, 16380, 182, 1 };
-	}
-	return coef;
-}
-
-Matrix& Matrix::diagonalMExp(Matrix& A) {
-	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
-	for (int c1 = 0; c1 < A.getNumRows(); c1++) {
-		R->setCell(c1, c1, exp(A.getCell(c1, c1)));
-	}
-	return *R;
-}
-
-Matrix& Matrix::zeroMExp(Matrix& A) {
-	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
-	return *R;
-}
-
+// Finds the exponential of a matrix
 Matrix& Matrix::mExp(Matrix& A, char method, int k) {
 	if (A.initialised) {
 		// Special Cases
@@ -473,12 +477,13 @@ Matrix& Matrix::mExp(Matrix& A, char method, int k) {
 	}
 }
 
-// Booleans
+// BOOLEANS
 
+// Check if a matrix is initialised
 const bool Matrix::isInitialised() {
 	return initialised;
 }
-
+// Check if a matrix is square
 const bool Matrix::isSquare() {
 	if (initialised) {
 		if (numCols == numRows) {
@@ -491,7 +496,7 @@ const bool Matrix::isSquare() {
 		throw (105);
 	}
 }
-
+// Check if a matrix is diagonal
 const bool Matrix::isDiagonal() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
@@ -507,7 +512,7 @@ const bool Matrix::isDiagonal() {
 		throw (106);
 	}
 }
-
+// Check if a matrix is a scalar matrix
 const bool Matrix::isScalar() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
@@ -523,7 +528,7 @@ const bool Matrix::isScalar() {
 		throw (107);
 	}
 }
-
+// Check if a matrix is an identity matrix
 const bool Matrix::isIdentity() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
@@ -539,7 +544,7 @@ const bool Matrix::isIdentity() {
 		throw (108);
 	}
 }
-
+// Check if a matrix is a zero matrix
 const bool Matrix::isZero() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
@@ -555,21 +560,22 @@ const bool Matrix::isZero() {
 		throw (109);
 	}
 }
-
+// Check if a matrix is "small"
 const bool Matrix::isSmall() {
 	return max(numRows, numCols) < 150;
 }
 
-// Getters
+// GETTERS
 
+// Get the contents of a matrix cell using a single index
 const std::complex<double> Matrix::getCell(int x) {
 	return matrix[x];
 }
-
+// Get the contents of a matrix cell using two indices
 const std::complex<double> Matrix::getCell(int row, int col) {
 	return matrix[row*numCols+col];
 }
-
+// Get the number of rows in a matrix
 const int Matrix::getNumRows() {
 	if (initialised) {
 		return numRows;
@@ -578,7 +584,7 @@ const int Matrix::getNumRows() {
 		throw (103);
 	}
 }
-
+// Get the number of columns in a matrix
 const int Matrix::getNumCols() {
 	if (initialised) {
 		return numCols;
@@ -587,7 +593,7 @@ const int Matrix::getNumCols() {
 		throw (104);
 	}
 }
-
+// Find the normal of a matrix
 const double Matrix::getNorm(int n) {
 	int c1, c2;
 	double sum, max = 0;
@@ -625,28 +631,29 @@ const double Matrix::getNorm(int n) {
 	}
 }
 
-// Setters
+// SETTERS
 
-void Matrix::setNumRows(int inNumRows) {
-	numRows = inNumRows;
-}
-
-void Matrix::setNumCols(int inNumCols) {
-	numCols = inNumCols;
-}
-
-void Matrix::setMatrix(std::vector<std::complex<double>> inMatrix) {
-	matrix = inMatrix;
-}
-
+// Set the value of a matrix cell using a single index
 void Matrix::setCell(int x, std::complex<double> value) {
 	matrix[x] = value;
 }
-
+// Set the value of a matrix cell using two indices
 void Matrix::setCell(int row, int col, std::complex<double> value) {
-	matrix[row*numCols+col] = value;
+	matrix[row*numCols + col] = value;
 }
-
+// Set the number of rows in a matrix
+void Matrix::setNumRows(int inNumRows) {
+	numRows = inNumRows;
+}
+// Set the number of columns in a matrix
+void Matrix::setNumCols(int inNumCols) {
+	numCols = inNumCols;
+}
+// Set the value of a matrix
+void Matrix::setMatrix(std::vector<std::complex<double>> inMatrix) {
+	matrix = inMatrix;
+}
+// Set the matrix to a zero matrix
 void Matrix::setZero() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows*numCols; c1++) {
@@ -657,7 +664,7 @@ void Matrix::setZero() {
 		throw (101);
 	}
 }
-
+// Set the matrix to an identity matrix
 void Matrix::setIdentity() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
@@ -674,7 +681,7 @@ void Matrix::setIdentity() {
 		throw (101);
 	}
 }
-
+// Set the matrix to a random matrix between limits
 void Matrix::setRandom(double min, double max) {
 	if (initialised) {
 		std::default_random_engine rng;
@@ -686,8 +693,9 @@ void Matrix::setRandom(double min, double max) {
 	}
 }
 
-// General Functions
+// GENERAL FUNCTIONS
 
+// Find the maximum of 2 integers
 int max(int x, int y) {
 	if (x > y) {
 		return x;
@@ -695,7 +703,7 @@ int max(int x, int y) {
 		return y;
 	}
 }
-
+// Find the maximum of 2 doubles
 double max(double x, double y) {
 	if (x > y) {
 		return x;
@@ -703,7 +711,7 @@ double max(double x, double y) {
 		return y;
 	}
 }
-
+// Find the minimum of 2 integers
 int min(int x, int y) {
 	if (x < y) {
 		return x;
@@ -711,7 +719,7 @@ int min(int x, int y) {
 		return y;
 	}
 }
-
+// Find the minimum of 2 doubles
 double min(double x, double y) {
 	if (x < y) {
 		return x;
@@ -720,8 +728,9 @@ double min(double x, double y) {
 	}
 }
 
-// << Operator
+// OPERATOR OVERRIDES
 
+// <<
 std::ostream& operator<<(std::ostream& oStream, Matrix& A) {
 	if (A.isInitialised()) {
 		std::complex<double> cell;
@@ -755,91 +764,65 @@ std::ostream& operator<<(std::ostream& oStream, Matrix& A) {
 
 	return oStream;
 }
-
-// + Operator
-
+// +
 Matrix& operator+(Matrix& A, Matrix& B) {
 	return Matrix::add(A, B);
 }
-
 Matrix& operator+(Matrix& A, double B) {
 	return Matrix::add(A, B);
 }
-
 Matrix& operator+(double A, Matrix& B) {
 	return Matrix::add(B, A);
 }
-
-// += Operator
-
+// +=
 Matrix& operator+=(Matrix& A, Matrix& B) {
 	return Matrix::add(A, B);
 }
-
 Matrix& operator+=(Matrix& A, double B) {
 	return Matrix::add(A, B);
 }
-
-// - Operator
-
+// -
 Matrix& operator-(Matrix& A, Matrix& B) {
 	return Matrix::sub(A, B);
 }
-
 Matrix& operator-(Matrix& A, double B) {
 	return Matrix::sub(A, B);
 }
-
-// -= Operator
-
+// -=
 Matrix& operator-=(Matrix& A, Matrix& B) {
 	return Matrix::sub(A, B);
 }
-
 Matrix& operator-=(Matrix& A, double B) {
 	return Matrix::sub(A, B);
 }
-
-// * Operator
-
+// *
 Matrix& operator*(Matrix& A, Matrix& B) {
 	return Matrix::mul(A, B);
 }
-
 Matrix& operator*(Matrix& A, double B) {
 	return Matrix::mul(B, A);
 }
-
 Matrix& operator*(double A, Matrix& B) {
 	return Matrix::mul(A, B);
 }
-
-// *= Operator
-
+// *=
 Matrix& operator*=(Matrix& A, Matrix& B) {
 	return Matrix::mul(A, B);
 }
-
 Matrix& operator*=(Matrix& A, double B) {
 	return Matrix::mul(B, A);
 }
-
-// / Operator
-
+// /
 Matrix& operator/(Matrix& A, Matrix& B) {
 	return Matrix::div(A, B);
 }
-
 Matrix& operator/(Matrix& A, double B) {
 	return Matrix::div(A, B);
 }
-
-// /= Operator
-
+// /=
 Matrix& operator/=(Matrix& A, Matrix& B) {
 	return Matrix::div(A, B);
 }
-
 Matrix& operator/=(Matrix& A, double B) {
 	return Matrix::div(A, B);
 }
