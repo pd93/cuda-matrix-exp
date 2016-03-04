@@ -67,19 +67,19 @@ public:
 	static Matrix& pow(Matrix& A, int x);
 	static Matrix& mExp(Matrix& A, char method = ' ', int k = -1);
 	// BOOLEANS
-	const bool isInitialised();
-	const bool isSquare();
-	const bool isDiagonal();
-	const bool isScalar();
-	const bool isIdentity();
-	const bool isZero();
-	const bool isSmall();
+	bool isInitialised();
+	bool isSquare();
+	bool isDiagonal();
+	bool isScalar();
+	bool isIdentity();
+	bool isZero();
+	bool isSmall();
 	// GETTERS
-	const std::complex<double> getCell(int x);
-	const std::complex<double> getCell(int row, int col);
-	const int getNumRows();
-	const int getNumCols();
-	const double getNorm(int n = 2);
+	std::complex<double> getCell(int x);
+	std::complex<double> getCell(int row, int col);
+	int getNumRows();
+	int getNumCols();
+	double getNorm(int n = 2);
 	// SETTERS
 	void setCell(int x, std::complex<double>);
 	void setCell(int row, int col, std::complex<double>);
@@ -92,10 +92,10 @@ public:
 };
 
 // GENERAL FUNCTIONS
-static int max(int x, int y);
-static double max(double x, double y);
-static int min(int x, int y);
-static double min(double x, double y);
+int max(int x, int y);
+double max(double x, double y);
+int min(int x, int y);
+double min(double x, double y);
 
 // OPERATOR OVERRIDES
 // <<

@@ -480,11 +480,11 @@ Matrix& Matrix::mExp(Matrix& A, char method, int k) {
 // BOOLEANS
 
 // Check if a matrix is initialised
-const bool Matrix::isInitialised() {
+bool Matrix::isInitialised() {
 	return initialised;
 }
 // Check if a matrix is square
-const bool Matrix::isSquare() {
+bool Matrix::isSquare() {
 	if (initialised) {
 		if (numCols == numRows) {
 			return true;
@@ -497,7 +497,7 @@ const bool Matrix::isSquare() {
 	}
 }
 // Check if a matrix is diagonal
-const bool Matrix::isDiagonal() {
+bool Matrix::isDiagonal() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
@@ -513,7 +513,7 @@ const bool Matrix::isDiagonal() {
 	}
 }
 // Check if a matrix is a scalar matrix
-const bool Matrix::isScalar() {
+bool Matrix::isScalar() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
@@ -529,7 +529,7 @@ const bool Matrix::isScalar() {
 	}
 }
 // Check if a matrix is an identity matrix
-const bool Matrix::isIdentity() {
+bool Matrix::isIdentity() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
@@ -545,7 +545,7 @@ const bool Matrix::isIdentity() {
 	}
 }
 // Check if a matrix is a zero matrix
-const bool Matrix::isZero() {
+bool Matrix::isZero() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
@@ -561,22 +561,22 @@ const bool Matrix::isZero() {
 	}
 }
 // Check if a matrix is "small"
-const bool Matrix::isSmall() {
+bool Matrix::isSmall() {
 	return max(numRows, numCols) < 150;
 }
 
 // GETTERS
 
 // Get the contents of a matrix cell using a single index
-const std::complex<double> Matrix::getCell(int x) {
+std::complex<double> Matrix::getCell(int x) {
 	return matrix[x];
 }
 // Get the contents of a matrix cell using two indices
-const std::complex<double> Matrix::getCell(int row, int col) {
+std::complex<double> Matrix::getCell(int row, int col) {
 	return matrix[row*numCols+col];
 }
 // Get the number of rows in a matrix
-const int Matrix::getNumRows() {
+int Matrix::getNumRows() {
 	if (initialised) {
 		return numRows;
 	} else {
@@ -585,7 +585,7 @@ const int Matrix::getNumRows() {
 	}
 }
 // Get the number of columns in a matrix
-const int Matrix::getNumCols() {
+int Matrix::getNumCols() {
 	if (initialised) {
 		return numCols;
 	} else {
@@ -594,7 +594,7 @@ const int Matrix::getNumCols() {
 	}
 }
 // Find the normal of a matrix
-const double Matrix::getNorm(int n) {
+double Matrix::getNorm(int n) {
 	int c1, c2;
 	double sum, max = 0;
 	if (n == 1) {
