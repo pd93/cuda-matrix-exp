@@ -23,7 +23,7 @@ class Matrix {
 public:
 	// Structures
 	struct params {
-		double scale;
+		int scale;
 		int mVal;
 		std::vector<Matrix> powers;
 	};
@@ -35,9 +35,9 @@ private:
 	// Internal Matrix Functions
 	static Matrix& taylorMExp(Matrix& A, int k);
 	static Matrix& padeMExp(Matrix& A);
-	static double ell(Matrix& A, double coef, int m);
+	static int ell(Matrix& A, double coef, int m);
 	static params getPadeParams(Matrix& A);
-	static std::vector<std::complex<double>> getPadeCoefficients(int m);
+	static std::vector<double> getPadeCoefficients(int m);
 	static Matrix& diagonalMExp(Matrix& A);
 	static Matrix& zeroMExp(Matrix& A);
 public:
@@ -99,14 +99,26 @@ Matrix& operator+(Matrix& A, Matrix& B);
 Matrix& operator+(Matrix& A, double B);
 Matrix& operator+(double A, Matrix& B);
 
+Matrix& operator+=(Matrix& A, Matrix& B);
+Matrix& operator+=(Matrix& A, double B);
+
 Matrix& operator-(Matrix& A, Matrix& B);
 Matrix& operator-(Matrix& A, double B);
+
+Matrix& operator-=(Matrix& A, Matrix& B);
+Matrix& operator-=(Matrix& A, double B);
 
 Matrix& operator*(Matrix& A, Matrix& B);
 Matrix& operator*(Matrix& A, double B);
 Matrix& operator*(double A, Matrix& B);
 
+Matrix& operator*=(Matrix& A, Matrix& B);
+Matrix& operator*=(Matrix& A, double B);
+
 Matrix& operator/(Matrix& A, Matrix& B);
 Matrix& operator/(Matrix& A, double B);
+
+Matrix& operator/=(Matrix& A, Matrix& B);
+Matrix& operator/=(Matrix& A, double B);
 
 #endif

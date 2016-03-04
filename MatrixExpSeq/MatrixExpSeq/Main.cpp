@@ -69,10 +69,10 @@ int main(int argc, char **argv) {
 		cout << B;
 		cout << setprecision(5) << duration << " seconds" << endl;
 
-		// Create C = 3*A
-		cout << endl << "Create C = 3*A" << endl;
+		// Create C = A/3
+		cout << endl << "Create C = A/3" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix C = 3 * A;
+		Matrix C = A / 3;
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << C;
@@ -95,7 +95,7 @@ int main(int argc, char **argv) {
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << E;
 		cout << setprecision(5) << duration << " seconds" << endl;
-
+		
 		cout << endl << "############################# Matrix Exponentials #############################" << endl;
 
 		// Create F = e^A (Taylor) =
@@ -106,22 +106,11 @@ int main(int argc, char **argv) {
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << F;
 		cout << setprecision(5) << duration << " seconds" << endl;
-
-
-
-		// Create TEMPORARY Z =
-		Matrix Z({
-			1, 3, 3,
-			2, 2, 2,
-			2, 3, 1
-		}, 3);
-
-
+		
 		// Create G = e^A (Pade) =
 		cout << endl << "Create G = e^A (Pade) =" << endl;
 		start = chrono::high_resolution_clock::now();
-		//Matrix* G = Matrix::mExp(A, 'p', 10);
-		Matrix G = Matrix::inv(Z);
+		Matrix G = Matrix::mExp(A, 'p', 10);
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << G;

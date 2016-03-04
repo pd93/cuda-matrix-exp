@@ -11,8 +11,6 @@
 
 #include "Matrix.hpp"
 
-// Params
-
 // Constructors
 
 Matrix::Matrix() {
@@ -202,7 +200,6 @@ Matrix& Matrix::inv(Matrix& A) {
 					}
 				}
 			}
-			std::cout << P << std::endl;
 			// Pivot P
 			for (c1 = n - 1; c1 > 0; c1--) {
 				if (P.getCell(c1 - 1, 0).real() < P.getCell(c1, 0).real()) {
@@ -213,14 +210,11 @@ Matrix& Matrix::inv(Matrix& A) {
 					}
 				}
 			}
-			std::cout << P << std::endl;
 			// Reduce to diagonal matrix
 			for (c1 = 0; c1 < n * 2; c1++) {
 				for (c2 = 0; c2 < n; c2++) {
 					if (c2 != c1 && c1 < n) {
-						//std::cout << c1 << ", " << c2 << std::endl;
 						tmp = P.getCell(c2, c1) / P.getCell(c1, c1);
-						//std::cout << P;
 						for (c3 = 0; c3 < n * 2; c3++) {
 							cell = P.getCell(c2, c3) - (P.getCell(c1, c3) * tmp);
 							P.setCell(c2, c3, cell);
@@ -228,7 +222,7 @@ Matrix& Matrix::inv(Matrix& A) {
 					}
 				}
 			}
-			std::cout << P << std::endl;
+			std::cout << P;
 			// Reduce to unit matrix
 			for (c1 = 0; c1 < n; c1++) {
 				tmp = P.getCell(c1, c1);
@@ -236,7 +230,7 @@ Matrix& Matrix::inv(Matrix& A) {
 					P.setCell(c1, c2, P.getCell(c1, c2) / tmp);
 				}
 			}
-			std::cout << P << std::endl;
+			std::cout << P;
 			// Copy P (Right side) to R
 			for (c1 = 0; c1 < n; c1++) {
 				for (c2 = 0; c2 < n; c2++) {
@@ -255,17 +249,18 @@ Matrix& Matrix::inv(Matrix& A) {
 }
 
 Matrix& Matrix::pow(Matrix& A, int x) {
-	if (A.initialised) {
-		Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
-		R->setIdentity();
-		for (int c1 = 1; c1 <= x; c1++) {
-			*R = Matrix::mul(A, *R);
-		}
-		return *R;
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
+	//if (A.initialised) {
+	//	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
+	//	R->setIdentity();
+	//	for (int c1 = 1; c1 <= x; c1++) {
+	//		*R = A * *R;
+	//	}
+	//	return *R;
+	//} else {
+	//	// Error! Cannot perform matrix operations before initialisation
+	//	throw (101);
+	//}
+	return A;
 }
 
 Matrix& Matrix::taylorMExp(Matrix& A, int k) {
@@ -286,13 +281,14 @@ Matrix& Matrix::taylorMExp(Matrix& A, int k) {
 }
 
 Matrix& Matrix::padeMExp(Matrix& A) {
-	// Init
-	int c1, c2;
-	params params = getPadeParams(A); // s, m, powers
+	// Get params
+	params params = getPadeParams(A);
 	double s = params.scale;
 	int m = params.mVal;
 	std::vector<Matrix> p = params.powers;
-	std::vector<std::complex<double>> c = getPadeCoefficients(m);
+	std::vector<double> c = getPadeCoefficients(m);
+	// Init
+	int c1, c2;
 	int n = max(A.getNumRows(), A.getNumCols());
 	Matrix* R = new Matrix(A);
 	Matrix U;
@@ -301,166 +297,42 @@ Matrix& Matrix::padeMExp(Matrix& A) {
 	I.setIdentity();
 	// Scaling
 	if (s != 0) {
-		//R = R / (2.^s);
-		//Tpowers = cellfun(@rdivide, Tpowers, ...
-		//num2cell(2. ^ (s * (1:length(Tpowers)))), 'UniformOutput', false);
+		//A = A / (2.^s);
+		//powers = cellfun(@rdivide, powers, ...
+		//num2cell(2. ^ (s * (1:length(powers)))), 'UniformOutput', false);
 	}
 	// Evaluate the Pade approximant.
 	if (m == 3 || m == 5 || m == 7 || m == 9) {
-		for (c1 = p.size() + 2; c1 < m - 1; c1 += 2) { //for (k = strt:2:m-1)
-			p[c1] = Matrix::mul(p[c1-2], p[2]);
+		for (c1 = (int) (p.size()) + 2; c1 < m - 1; c1 += 2) { //for (k = strt:2:m-1)
+			p[c1] = p[c1-2] * p[2];
 		}
-		U = Matrix::mul(c[2].real(), I);
-		V = Matrix::mul(c[1].real(), I);
-		for (c2 = m; c2 > 3; c2 -= 2) { //for (j = m : -2 : 3)
-			U = Matrix::add(U, Matrix::mul(c[c2 + 1].real(), p[c2 - 1]));
-			V = Matrix::add(V, Matrix::mul(c[c2].real(), p[c2 - 1]));
+		U = c[1] * I;
+		V = c[0] * I;
+		for (c2 = m; c2 >= 3; c2 -= 2) { //for (j = m : -2 : 3)
+			U += (c[c2] * p[c2 - 1]);
+			V += (c[c2-1] * p[c2 - 1]);
 		}
-		U = Matrix::mul(*R, U);
+		U *= A;
 	} else if (m == 13) {
-		U = *R * (p[6]*(c[14].real()*p[6] + c[12].real()*p[4] + c[10].real()*p[2]) + c[8].real()*p[6] + c[6].real()*p[4] + c[4].real()*p[2] + c[2].real()*I);
-		V = p[6]*(c[13].real()*p[6] + c[11].real()*p[4] + c[9].real()*p[2]) + c[7].real()*p[6] + c[5].real()*p[4] + c[3].real()*p[2] + c[1].real()*I;
+		U = A * (p[6] * (c[13] * p[6] + c[11] * p[4] + c[9] * p[2]) + c[7] * p[6] + c[5] * p[4] + c[3] * p[2] + c[1] * I);
+		V = p[6] * (c[12] * p[6] + c[10] * p[4] + c[8] * p[2]) + c[6] * p[6] + c[4] * p[4] + c[2] * p[2] + c[0] * I;
 	}
-	Matrix F = (V-U)/(2*U) + I;  //F = (-U+V)\(U+V);
+	A = (V - U) / (2 * U) + I; //*R = (-U + V) / (U + V);
 	//if (recomputeDiags) {
-	//	F = recompute_block_diag(T, F, blockformat);
+	//	*R = recompute_block_diag(A, *R, blockformat);
 	//}
 	//// Squaring phase.
 	//for (int k = 0; k < s; k++) {
-	//	F = F*F;
+	//	*R = *R**R;
 	//	if (recomputeDiags) {
-	//		T = 2 * T;
-	//		F = recompute_block_diag(T, F, blockformat);
+	//		A = 2 * A;
+	//		*R = recompute_block_diag(A, *R, blockformat);
 	//	}
 	//}
-
-	R->setIdentity();
-	return *R;
+	return A;
 }
 
-//[m_vals, theta] = expmchk(A); % Initialization
-//normA = norm(A, 1);
-//
-//if normA <= theta(end)
-//% no scaling and squaring is required.
-//for i = 1:length(m_vals)
-//if normA <= theta(i)
-//F = PadeApproximantOfDegree(m_vals(i), A);
-//break;
-//end
-//end
-//else
-//[t, s] = log2(normA / theta(end));
-//s = s - (t == 0.5); % adjust s if normA / theta(end) is a power of 2.
-//A = A / 2 ^ s;    % Scaling
-//F = PadeApproximantOfDegree(m_vals(end), A);
-//for i = 1:s
-//F = F*F;  % Squaring
-//end
-//end
-//% End of expm
-//
-//function[m_vals, theta] = expmchk(A)
-//% EXPMCHK Check the class of input A and initialize M_VALS and THETA accordingly.
-//switch class(A)
-//case 'double'
-//m_vals = [3 5 7 9 13];
-//% theta_m for m = 1:13.
-//theta = [%3.650024139523051e-008
-//%5.317232856892575e-004
-//1.495585217958292e-002  % m_vals = 3
-//% 8.536352760102745e-002
-//2.539398330063230e-001  % m_vals = 5
-//% 5.414660951208968e-001
-//9.504178996162932e-001  % m_vals = 7
-//% 1.473163964234804e+000
-//2.097847961257068e+000  % m_vals = 9
-//% 2.811644121620263e+000
-//%3.602330066265032e+000
-//%4.458935413036850e+000
-//5.371920351148152e+000]; % m_vals = 13
-//case 'single'
-//m_vals = [3 5 7];
-//% theta_m for m = 1:7.
-//theta = [%8.457278879935396e-004
-//%8.093024012430565e-002
-//4.258730016922831e-001  % m_vals = 3
-//% 1.049003250386875e+000
-//1.880152677804762e+000  % m_vals = 5
-//% 2.854332750593825e+000
-//3.925724783138660e+000]; % m_vals = 7
-//otherwise
-//error(message('MATLAB:expm:inputType'))
-//end
-
-//void Matrix::PadeApproximantOfDegree(int m, Matrix* A) {
-//	// PADEAPPROXIMANTOFDEGREE  Pade approximant to exponential.
-//	// F = PADEAPPROXIMANTOFDEGREE(M, A) is the degree M diagonal
-//	// Pade approximant to EXP(A), where M = 3, 5, 7, 9 or 13.
-//	// Series are evaluated in decreasing order of powers, which is
-//	// in approx.increasing order of maximum norms of the terms.
-//	int c1;
-//	int n = A->getNumRows();
-//	std::vector<double> coef = getPadeCoefficients(m);
-//	Matrix* I = new Matrix(n);
-//	I->setIdentity();
-//	Matrix* V;
-//	Matrix* U;
-//	Matrix* Apowers[14];
-//	// Evaluate Pade approximant.
-//	if (m == 3 || m == 5 || m == 7 || m == 9) {
-//		//Apowers[0] = new Matrix(ceil((m + 1) / 2), 1);
-//		//Apowers[1] = I;
-//		Apowers[0] = new Matrix(*I);
-//		Apowers[1] = new Matrix(*A);
-//		Apowers[2] = Matrix::mul(A, A);
-//		for (c1 = 3; c1 < ceil((m + 1) / 2); c1++) {
-//			Apowers[c1] = Matrix::mul(Apowers[c1-1], Apowers[2]);
-//		}
-//		U = new Matrix(n);
-//		V = new Matrix(n);
-//		U->setIdentity();
-//		V->setIdentity();
-//		for (c1 = m + 1; c1 > -2; c1 -= 2) {
-//			U = Matrix::add(U, Matrix::mul(coef[c1], Apowers[c1 / 2]));
-//		}
-//		U = Matrix::mul(A, U);
-//		for (c1 = m; c1 > -2; c1--) {
-//			V = Matrix::add(V, Matrix::mul(coef[c1], Apowers[(c1 + 1) / 2]));
-//		}
-//	} 
-//	else if (m == 13) {
-//		// For optimal evaluation need different formula for m >= 12.
-//		Matrix* A2 = Matrix::mul(A, A);
-//		Matrix* A4 = Matrix::mul(A2, A2);
-//		Matrix* A6 = Matrix::mul(A2, A4);
-//		//Matrix* U = A * (A6*(coef[14]*A6 + coef[12]*A4 + coef[10]*A2) + coef[8]*A6 + coef[6]*A4 + coef[4]*A2 + coef[2]*I);
-//		Matrix* U = Matrix::mul(A, (Matrix::mul(A6, 
-//			Matrix::add(Matrix::mul(coef[14], A6),
-//			Matrix::add(Matrix::mul(coef[12], A4),
-//			Matrix::add(Matrix::mul(coef[10], A2),
-//			Matrix::add(Matrix::mul(coef[8], A6),
-//			Matrix::add(Matrix::mul(coef[6], A4),
-//			Matrix::add(Matrix::mul(coef[4], A2),
-//			Matrix::mul(coef[2], I))))))))));
-//		//Matrix* V = A6*(coef[13]*A6 + coef[11]*A4 + coef[9]*A2) + coef[7]*A6 + coef[5]*A4 + coef[3]*A2 + coef[1]*I;
-//		Matrix* V = Matrix::mul(A6, 
-//			Matrix::add(Matrix::mul(coef[13], A6),
-//			Matrix::add(Matrix::mul(coef[11], A4),
-//			Matrix::add(Matrix::mul(coef[9], A2), 
-//			Matrix::add(Matrix::mul(coef[7], A6), 
-//			Matrix::add(Matrix::mul(coef[5], A4), 
-//			Matrix::add(Matrix::mul(coef[3], A2), 
-//			Matrix::mul(coef[1], I))))))));
-//	}
-//	else {
-//		// Do nothing
-//	}
-//	//Matrix* F = (V - U)\(2 * U) + I;
-//	Matrix* F = Matrix::add(Matrix::div(Matrix::sub(V, U), (Matrix::mul(2, U))), I);
-//}
-
-double Matrix::ell(Matrix& A, double coef, int m) {
+int Matrix::ell(Matrix& A, double coef, int m) {
 	//Matrix* scaledA = coef. ^ (1 / (2 * m_val + 1)).*abs(T);
 	//alpha = normAm(scaledA, 2 * m_val + 1) / oneNorm(T);
 	//t = max(ceil(log2(2 * alpha / eps(class(alpha))) / (2 * m_val)), 0);
@@ -472,12 +344,14 @@ Matrix::params Matrix::getPadeParams(Matrix& A) {
 	int d4, d6, d8, d10;
 	int eta1, eta3, eta4, eta5;
 	std::vector<double> coef, theta;
-	std::vector<Matrix> powers;
+	p.powers.resize(7);
 	p.scale = 0;
 	coef = {
 		(1 / 100800),
 		(1 / 10059033600),
-		(1 / 4487938430976000)//,
+		(1 / 4487938430976000),
+		(1 / 9999999999999999999), // Substitute
+		(1 / 9999999999999999999)  // Values
 		//(1 / 5914384781877411840000LL), // Too long
 		//(1 / 113250775606021113483283660800000000)
 	};
@@ -511,7 +385,7 @@ Matrix::params Matrix::getPadeParams(Matrix& A) {
 		return p;
 	}
 	if (A.isSmall()) {
-		d8 = (int) (Matrix::mul(powers[4], powers[4]).getNorm(1));
+		d8 = (int) ((p.powers[4] * p.powers[4]).getNorm(1));
 		d8 = (int) (d8 ^ (1 / 8));
 	} else {
 		//d8 = normAm(powers[4], 2) ^ (1 / 8);
@@ -526,14 +400,14 @@ Matrix::params Matrix::getPadeParams(Matrix& A) {
 		return p;
 	}
 	if (A.isSmall()) {
-		d10 = (int) (std::pow((powers[4] * powers[6]).getNorm(1), 1.0 / 10));
+		d10 = (int) (std::pow((p.powers[4] * p.powers[6]).getNorm(1), 1.0 / 10));
 	} else {
 		//d10 = normAm(powers[2], 5) ^ (1 / 10);
 	}
 	eta4 = max(d8, d10);
 	eta5 = min(eta3, eta4);
-	p.scale = max(ceil(log2(eta5 / theta[5])), 0.0);
-	p.scale += ell(pow(Matrix::div(A, 2), p.scale), coef[5], 13);
+	p.scale = max( (int) (ceil(log2(eta5 / theta[5]))), 0);
+	//p.scale += ell(pow((A / 2), p.scale), coef[5], 13);
 	if (p.scale == INFINITY) {
 		//[t, s] = log2(norm(A, 1) / theta.end());
 		//s = s - (t == 0.5); //adjust s if normA / theta(end) is a power of 2.
@@ -542,8 +416,8 @@ Matrix::params Matrix::getPadeParams(Matrix& A) {
 	return p;
 }
 
-std::vector<std::complex<double>> Matrix::getPadeCoefficients(int m) {
-	std::vector<std::complex<double>> coef;
+std::vector<double> Matrix::getPadeCoefficients(int m) {
+	std::vector<double> coef;
 	switch (m) {
 		case 3:
 			coef = { 120, 60, 12, 1 };
@@ -844,7 +718,7 @@ double min(double x, double y) {
 	}
 }
 
-// Stream Operators
+// << Operator
 
 std::ostream& operator<<(std::ostream& oStream, Matrix& A) {
 	if (A.isInitialised()) {
@@ -853,12 +727,20 @@ std::ostream& operator<<(std::ostream& oStream, Matrix& A) {
 			oStream << "|";
 			for (int c2 = 0; c2 < A.getNumCols(); c2++) {
 				cell = A.getCell(c1, c2);
-				if (abs(cell.real() - (int) (cell.real()) > 0)) {
+				if (abs(cell.real() - (int) (cell.real()) != 0)) {
 					// Decimal
-					oStream << " " << std::setprecision(3) << std::fixed << cell;
+					if (cell.imag() != 0) {
+						oStream << " " << std::setprecision(3) << std::fixed << cell;
+					} else {
+						oStream << " " << std::setprecision(3) << std::fixed << cell.real();
+					}
 				} else {
 					// Integer
-					oStream << " " << std::setprecision(0) << std::fixed << cell;
+					if (cell.imag() != 0) {
+						oStream << " " << std::setprecision(0) << std::fixed << cell;
+					} else {
+						oStream << " " << std::setprecision(0) << std::fixed << cell.real();
+					}
 				}
 			}
 			oStream << " |" << std::endl;
@@ -872,6 +754,8 @@ std::ostream& operator<<(std::ostream& oStream, Matrix& A) {
 	return oStream;
 }
 
+// + Operator
+
 Matrix& operator+(Matrix& A, Matrix& B) {
 	return Matrix::add(A, B);
 }
@@ -884,6 +768,18 @@ Matrix& operator+(double A, Matrix& B) {
 	return Matrix::add(B, A);
 }
 
+// += Operator
+
+Matrix& operator+=(Matrix& A, Matrix& B) {
+	return Matrix::add(A, B);
+}
+
+Matrix& operator+=(Matrix& A, double B) {
+	return Matrix::add(A, B);
+}
+
+// - Operator
+
 Matrix& operator-(Matrix& A, Matrix& B) {
 	return Matrix::sub(A, B);
 }
@@ -891,6 +787,18 @@ Matrix& operator-(Matrix& A, Matrix& B) {
 Matrix& operator-(Matrix& A, double B) {
 	return Matrix::sub(A, B);
 }
+
+// -= Operator
+
+Matrix& operator-=(Matrix& A, Matrix& B) {
+	return Matrix::sub(A, B);
+}
+
+Matrix& operator-=(Matrix& A, double B) {
+	return Matrix::sub(A, B);
+}
+
+// * Operator
 
 Matrix& operator*(Matrix& A, Matrix& B) {
 	return Matrix::mul(A, B);
@@ -904,10 +812,32 @@ Matrix& operator*(double A, Matrix& B) {
 	return Matrix::mul(A, B);
 }
 
+// *= Operator
+
+Matrix& operator*=(Matrix& A, Matrix& B) {
+	return Matrix::mul(A, B);
+}
+
+Matrix& operator*=(Matrix& A, double B) {
+	return Matrix::mul(B, A);
+}
+
+// / Operator
+
 Matrix& operator/(Matrix& A, Matrix& B) {
 	return Matrix::div(A, B);
 }
 
 Matrix& operator/(Matrix& A, double B) {
+	return Matrix::div(A, B);
+}
+
+// /= Operator
+
+Matrix& operator/=(Matrix& A, Matrix& B) {
+	return Matrix::div(A, B);
+}
+
+Matrix& operator/=(Matrix& A, double B) {
 	return Matrix::div(A, B);
 }
