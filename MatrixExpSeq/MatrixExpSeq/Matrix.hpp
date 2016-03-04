@@ -20,23 +20,26 @@
 #include <math.h>
 
 class Matrix {
+public:
+	// Structures
+	struct params {
+		double scale;
+		int mVal;
+		std::vector<Matrix> powers;
+	};
 private:
 	// Variables
 	std::vector<std::complex<double>> matrix;
 	int numRows, numCols;
 	bool initialised;
 	// Internal Matrix Functions
-	static Matrix* taylorMExp(Matrix* A, int k);
-	static Matrix* padeMExp(Matrix* A, int k);
-	//static void PadeApproximantOfDegree(int m, Matrix* A);
-	static int getPadeParams(Matrix* A);
-	static std::complex<double> max(std::complex<double> x, std::complex<double> y);
-	static std::complex<double> min(std::complex<double> x, std::complex<double> y);
-	static double ell(Matrix* A, std::vector<std::complex<double>> coef, int m);
-	static std::complex<double> oneNorm(Matrix* A);
+	static Matrix& taylorMExp(Matrix& A, int k);
+	static Matrix& padeMExp(Matrix& A);
+	static double ell(Matrix& A, double coef, int m);
+	static params getPadeParams(Matrix& A);
 	static std::vector<std::complex<double>> getPadeCoefficients(int m);
-	static Matrix* diagonalMExp(Matrix* A);
-	static Matrix* zeroMExp(Matrix* A);
+	static Matrix& diagonalMExp(Matrix& A);
+	static Matrix& zeroMExp(Matrix& A);
 public:
 	// Constructors
 	Matrix();
@@ -47,17 +50,17 @@ public:
 	Matrix(const Matrix &obj);
 	void init(int inNumRows, int inNumCols);
 	// Matrix Operations
-	static Matrix* add(Matrix* A, Matrix* B);
-	static Matrix* add(Matrix* A, double x);
-	static Matrix* sub(Matrix* A, Matrix* B);
-	static Matrix* sub(Matrix* A, double x);
-	static Matrix* mul(Matrix* A, Matrix* B);
-	static Matrix* mul(double x, Matrix* A);
-	static Matrix* div(Matrix* A, Matrix* B);
-	static Matrix* div(double x, Matrix* A);
-	static Matrix* inv(Matrix* A);
-	static Matrix* pow(Matrix* A, int x);
-	static Matrix* mExp(Matrix* A, char method = ' ', int k = -1);
+	static Matrix& add(Matrix& A, Matrix& B);
+	static Matrix& add(Matrix& A, double x);
+	static Matrix& sub(Matrix& A, Matrix& B);
+	static Matrix& sub(Matrix& A, double x);
+	static Matrix& mul(Matrix& A, Matrix& B);
+	static Matrix& mul(double x, Matrix& A);
+	static Matrix& div(Matrix& A, Matrix& B);
+	static Matrix& div(Matrix& A, double x);
+	static Matrix& inv(Matrix& A);
+	static Matrix& pow(Matrix& A, int x);
+	static Matrix& mExp(Matrix& A, char method = ' ', int k = -1);
 	// Booleans
 	const bool isInitialised();
 	const bool isSquare();
@@ -65,11 +68,13 @@ public:
 	const bool isScalar();
 	const bool isIdentity();
 	const bool isZero();
+	const bool isSmall();
 	// Getters
 	const std::complex<double> getCell(int x);
 	const std::complex<double> getCell(int row, int col);
 	const int getNumRows();
 	const int getNumCols();
+	const double getNorm(int n = 2);
 	// Setters
 	void setNumRows(int inNumRows);
 	void setNumCols(int inNumCols);
@@ -81,7 +86,27 @@ public:
 	void setRandom(double min, double max);
 };
 
+// General Functions
+static int max(int x, int y);
+static double max(double x, double y);
+static int min(int x, int y);
+static double min(double x, double y);
+
 // Operators
-std::ostream& operator<< (std::ostream& stream, Matrix* A);
+std::ostream& operator<< (std::ostream& stream, Matrix& A);
+
+Matrix& operator+(Matrix& A, Matrix& B);
+Matrix& operator+(Matrix& A, double B);
+Matrix& operator+(double A, Matrix& B);
+
+Matrix& operator-(Matrix& A, Matrix& B);
+Matrix& operator-(Matrix& A, double B);
+
+Matrix& operator*(Matrix& A, Matrix& B);
+Matrix& operator*(Matrix& A, double B);
+Matrix& operator*(double A, Matrix& B);
+
+Matrix& operator/(Matrix& A, Matrix& B);
+Matrix& operator/(Matrix& A, double B);
 
 #endif

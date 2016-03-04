@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 		// Create A
 		cout << endl << "Create A =" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* A = new Matrix({
+		Matrix A({
 			1, 2, 3, 3, 1,
 			3, 2, 1, 2, 3,
 			1, 2, 3, 3, 1,
@@ -41,8 +41,8 @@ int main(int argc, char **argv) {
 		// Create I (Identity)
 		cout << endl << "Create I (Identity) =" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* I = new Matrix(5, 5);
-		I->setIdentity();
+		Matrix I(5, 5);
+		I.setIdentity();
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << I;
@@ -51,8 +51,8 @@ int main(int argc, char **argv) {
 		// Create R (Random 0-9)
 		cout << endl << "Create R (Random 0-9) =" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* R = new Matrix(5, 5);
-		R->setRandom(0, 9);
+		Matrix R(5, 5);
+		R.setRandom(0, 9);
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << R;
@@ -63,25 +63,25 @@ int main(int argc, char **argv) {
 		// Create B = A+R
 		cout << endl << "Create B = A+R =" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* B = Matrix::add(A, R);
+		Matrix B = A + R;
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << B;
 		cout << setprecision(5) << duration << " seconds" << endl;
 
-		// Create C = A*3
-		cout << endl << "Create C = A*3" << endl;
+		// Create C = 3*A
+		cout << endl << "Create C = 3*A" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* C = Matrix::mul(3, A);
+		Matrix C = 3 * A;
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << C;
 		cout << setprecision(5) << duration << " seconds" << endl;
 
-		// Create D = A*R
-		cout << endl << "Create D = A*R =" << endl;
+		// Create D = A*I
+		cout << endl << "Create D = A*I =" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* D = Matrix::mul(A, I);
+		Matrix D = A * I;
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << D;
@@ -90,7 +90,7 @@ int main(int argc, char **argv) {
 		// Create E = A^2
 		cout << endl << "Create E = A^2 =" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* E = Matrix::pow(A, 2);
+		Matrix E = Matrix::pow(A, 2);
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << E;
@@ -101,7 +101,7 @@ int main(int argc, char **argv) {
 		// Create F = e^A (Taylor) =
 		cout << endl << "Create F = e^A (Taylor) =" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* F = Matrix::mExp(A, 't', 50);
+		Matrix F = Matrix::mExp(A, 't', 50);
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << F;
@@ -110,7 +110,7 @@ int main(int argc, char **argv) {
 
 
 		// Create TEMPORARY Z =
-		Matrix* Z = new Matrix({
+		Matrix Z({
 			1, 3, 3,
 			2, 2, 2,
 			2, 3, 1
@@ -121,7 +121,7 @@ int main(int argc, char **argv) {
 		cout << endl << "Create G = e^A (Pade) =" << endl;
 		start = chrono::high_resolution_clock::now();
 		//Matrix* G = Matrix::mExp(A, 'p', 10);
-		Matrix* G = Matrix::inv(Z);
+		Matrix G = Matrix::inv(Z);
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << G;
@@ -130,15 +130,12 @@ int main(int argc, char **argv) {
 		// Create H = e^I (Diagonal)
 		cout << endl << "Create H = e^I (Diagonal) =" << endl;
 		start = chrono::high_resolution_clock::now();
-		Matrix* H = Matrix::mExp(I);
+		Matrix H = Matrix::mExp(I);
 		end = chrono::high_resolution_clock::now();
 		duration = (chrono::duration_cast<chrono::microseconds>(end - start).count() / 100000.0);
 		cout << H;
 		cout << setprecision(5) << duration << " seconds" << endl;
 
-		// Delete arrays and set to nullptr
-		delete A, B, C, D, E, F, G, H, I, R;
-		A, B, C, D, E, F, G, H, I, R = nullptr;
 	} catch (int e) {
 		printf("\n||||||||||||||||\n|| Error: %i ||\n||||||||||||||||\n", e);
 	}

@@ -11,6 +11,8 @@
 
 #include "Matrix.hpp"
 
+// Params
+
 // Constructors
 
 Matrix::Matrix() {
@@ -52,18 +54,18 @@ void Matrix::init(int inNumRows, int inNumCols) {
 
 // Matrix Operations
 
-Matrix* Matrix::add(Matrix* A, Matrix* B) {
-	if (A->initialised && B->initialised) {
-		int ar = A->getNumRows();
-		int ac = A->getNumCols();
-		int br = B->getNumRows();
-		int bc = B->getNumCols();
+Matrix& Matrix::add(Matrix& A, Matrix& B) {
+	if (A.initialised && B.initialised) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
+		int br = B.getNumRows();
+		int bc = B.getNumCols();
 		if (ar == br && ac == bc) {
-			Matrix *R = new Matrix(ar, ac);
+			Matrix* R = new Matrix(ar, ac);
 			for (int c1 = 0; c1 < ar*ac; c1++) {
-				R->setCell(c1, A->getCell(c1) + B->getCell(c1));
+				R->setCell(c1, A.getCell(c1) + B.getCell(c1));
 			}
-			return R;
+			return *R;
 		} else {
 			// Error! Cannot add these matrices
 			throw (201);
@@ -74,33 +76,33 @@ Matrix* Matrix::add(Matrix* A, Matrix* B) {
 	}
 }
 
-Matrix* Matrix::add(Matrix* A, double x) {
-	if (A->initialised) {
-		int ar = A->getNumRows();
-		int ac = A->getNumCols();
+Matrix& Matrix::add(Matrix& A, double x) {
+	if (A.initialised) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
 		Matrix *R = new Matrix(ar, ac);
 		for (int c1 = 0; c1 < ar*ac; c1++) {
-			R->setCell(c1, A->getCell(c1) + x);
+			R->setCell(c1, A.getCell(c1) + x);
 		}
-		return R;
+		return *R;
 	} else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
 }
 
-Matrix* Matrix::sub(Matrix* A, Matrix* B) {
-	if (A->initialised && B->initialised) {
-		int ar = A->getNumRows();
-		int ac = A->getNumCols();
-		int br = B->getNumRows();
-		int bc = B->getNumCols();
+Matrix& Matrix::sub(Matrix& A, Matrix& B) {
+	if (A.initialised && B.initialised) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
+		int br = B.getNumRows();
+		int bc = B.getNumCols();
 		if (ar == br && ac == bc) {
-			Matrix *R = new Matrix(ar, ac);
+			Matrix* R = new Matrix(ar, ac);
 			for (int c1 = 0; c1 < ar*ac; c1++) {
-				R->setCell(c1, A->getCell(c1) - B->getCell(c1));
+				R->setCell(c1, A.getCell(c1) - B.getCell(c1));
 			}
-			return R;
+			return *R;
 		} else {
 			// Error! Cannot subtract these matrices
 			throw (201);
@@ -111,27 +113,27 @@ Matrix* Matrix::sub(Matrix* A, Matrix* B) {
 	}
 }
 
-Matrix* Matrix::sub(Matrix* A, double x) {
-	if (A->initialised) {
-		int ar = A->getNumRows();
-		int ac = A->getNumCols();
-		Matrix *R = new Matrix(ar, ac);
+Matrix& Matrix::sub(Matrix& A, double x) {
+	if (A.initialised) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
+		Matrix* R = new Matrix(ar, ac);
 		for (int c1 = 0; c1 < ar*ac; c1++) {
-			R->setCell(c1, A->getCell(c1) - x);
+			R->setCell(c1, A.getCell(c1) - x);
 		}
-		return R;
+		return *R;
 	} else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
 }
 
-Matrix* Matrix::mul(Matrix* A, Matrix* B) {
-	if (A->initialised && B->initialised) {
-		int ar = A->getNumRows();
-		int ac = A->getNumCols();
-		int br = B->getNumRows();
-		int bc = B->getNumCols();
+Matrix& Matrix::mul(Matrix& A, Matrix& B) {
+	if (A.initialised && B.initialised) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
+		int br = B.getNumRows();
+		int bc = B.getNumCols();
 		if (ac == br) {
 			Matrix* R = new Matrix(ar, bc);
 			std::complex<double> cell;
@@ -139,12 +141,12 @@ Matrix* Matrix::mul(Matrix* A, Matrix* B) {
 				for (int c2 = 0; c2 < bc; c2++) {
 					cell = 0;
 					for (int c3 = 0; c3 < br; c3++) {
-						cell += A->getCell(c1, c3) * B->getCell(c3, c2);
+						cell += A.getCell(c1, c3) * B.getCell(c3, c2);
 					}
 					R->setCell(c1, c2, cell);
 				}
 			}
-			return R;
+			return *R;
 		} else {
 			// Error! Cannot multiply these matrices together
 			throw (203);
@@ -155,38 +157,38 @@ Matrix* Matrix::mul(Matrix* A, Matrix* B) {
 	}
 }
 
-Matrix* Matrix::mul(double x, Matrix* A) {
-	if (A->initialised) {
-		int ar = A->getNumRows();
-		int ac = A->getNumCols();
+Matrix& Matrix::mul(double x, Matrix& A) {
+	if (A.initialised) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
 		Matrix* R = new Matrix(ar, ac);
 		for (int c1 = 0; c1 < ar; c1++) {
 			for (int c2 = 0; c2 < ac; c2++) {
-				R->setCell(c1, c2, A->getCell(c1, c2) * x);
+				R->setCell(c1, c2, A.getCell(c1, c2) * x);
 			}
 		}
-		return R;
+		return *R;
 	} else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
 }
 
-Matrix* Matrix::div(Matrix* A, Matrix* B) {
+Matrix& Matrix::div(Matrix& A, Matrix& B) {
 	return mul(A, Matrix::inv(B));
 }
 
-Matrix* Matrix::div(double x, Matrix* A) {
+Matrix& Matrix::div(Matrix& A, double x) {
 	return mul(x, Matrix::inv(A));
 }
 
-Matrix* Matrix::inv(Matrix* A) {
-	if (A->initialised) {
-		int ar = A->getNumRows();
-		int ac = A->getNumCols();
+Matrix& Matrix::inv(Matrix& A) {
+	if (A.initialised) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
 		if (ar == ac) {
 			// Init
-			Matrix* P = new Matrix(ar, ac*2);
+			Matrix P(ar, ac*2);
 			Matrix* R = new Matrix(ar, ac);
 			int c1, c2, c3;
 			int n = ac;
@@ -194,20 +196,20 @@ Matrix* Matrix::inv(Matrix* A) {
 			// Copy A into P (Left side)
 			for (c1 = 0; c1 < n; c1++) {
 				for (c2 = 0; c2 < n; c2++) {
-					P->setCell(c1, c2, A->getCell(c1, c2));
+					P.setCell(c1, c2, A.getCell(c1, c2));
 					if (c1 == c2) {
-						P->setCell(c1, c2 + n, 1);
+						P.setCell(c1, c2 + n, 1);
 					}
 				}
 			}
 			std::cout << P << std::endl;
 			// Pivot P
 			for (c1 = n - 1; c1 > 0; c1--) {
-				if (P->getCell(c1 - 1, 0).real() < P->getCell(c1, 0).real()) {
+				if (P.getCell(c1 - 1, 0).real() < P.getCell(c1, 0).real()) {
 					for (c2 = 0; c2 < n * 2; c2++) {
-						tmp = P->getCell(c1, c2);
-						P->setCell(c1, c2, P->getCell(c1 - 1, c2));
-						P->setCell(c1 - 1, c2, tmp);
+						tmp = P.getCell(c1, c2);
+						P.setCell(c1, c2, P.getCell(c1 - 1, c2));
+						P.setCell(c1 - 1, c2, tmp);
 					}
 				}
 			}
@@ -217,11 +219,11 @@ Matrix* Matrix::inv(Matrix* A) {
 				for (c2 = 0; c2 < n; c2++) {
 					if (c2 != c1 && c1 < n) {
 						//std::cout << c1 << ", " << c2 << std::endl;
-						tmp = P->getCell(c2, c1) / P->getCell(c1, c1);
+						tmp = P.getCell(c2, c1) / P.getCell(c1, c1);
 						//std::cout << P;
 						for (c3 = 0; c3 < n * 2; c3++) {
-							cell = P->getCell(c2, c3) - (P->getCell(c1, c3) * tmp);
-							P->setCell(c2, c3, cell);
+							cell = P.getCell(c2, c3) - (P.getCell(c1, c3) * tmp);
+							P.setCell(c2, c3, cell);
 						}
 					}
 				}
@@ -229,59 +231,19 @@ Matrix* Matrix::inv(Matrix* A) {
 			std::cout << P << std::endl;
 			// Reduce to unit matrix
 			for (c1 = 0; c1 < n; c1++) {
-				tmp = P->getCell(c1, c1);
+				tmp = P.getCell(c1, c1);
 				for (c2 = 0; c2 < n * 2; c2++) {
-					P->setCell(c1, c2, P->getCell(c1, c2) / tmp);
+					P.setCell(c1, c2, P.getCell(c1, c2) / tmp);
 				}
 			}
 			std::cout << P << std::endl;
 			// Copy P (Right side) to R
 			for (c1 = 0; c1 < n; c1++) {
 				for (c2 = 0; c2 < n; c2++) {
-					R->setCell(c1, c2, P->getCell(c1, c2 + n));
+					R->setCell(c1, c2, P.getCell(c1, c2 + n));
 				}
 			}
-
-
-			//int c1, c2, c3, c4, c5, minDim, pivot;
-			//double tmp, scale;
-			//// find minimum dimension
-			//if (ar < ac) {
-			//	minDim = ar;
-			//} else {
-			//	minDim = ac;
-			//}
-			//for (c1 = 0; c1 < minDim; c1++) {
-			//	pivot = 0;
-			//	for (c2 = c1; c2 < ac; c2++) {
-			//		if (std::abs(R->getCell(c2, c1)) > pivot) {
-			//			pivot = c2;
-			//		}
-			//	}
-			//	std::cout << R << " (" << pivot << ", " << c1 << ")" << std::endl;
-			//	if (R->getCell(pivot, c1) != 0) {
-			//		// Swap rows 'c1' and 'pivot'
-			//		for (c3 = 0; c3 < ac; c3++) {
-			//			tmp = R->getCell(c1, c3);
-			//			R->setCell(c1, c3, R->getCell(pivot, c3));
-			//			R->setCell(pivot, c3, tmp);
-			//		}
-			//		// For each row below the pivot
-			//		for (c4 = c1; c4 < ac; c4++) {
-			//			scale = R->getCell(c4, c1) / R->getCell(c1, c1);
-			//			// For each remaining element in the current row
-			//			for (c5 = c1; c5 < ar; c5++) {
-			//				R->setCell(c4, c5, R->getCell(c4, c5) - R->getCell(c1, c5) * scale);
-			//			}
-			//			// Fill the lower triangle with zeros:
-			//			R->setCell(c4, c1, 0);
-			//		}
-			//	} else {
-			//		// Error! Cannot find the inverse of this matrix
-			//		throw (205);
-			//	}
-			//}
-			return R;
+			return *R;
 		} else {
 			// Error! Cannot find the inverse of this matrix
 			throw (205);
@@ -292,43 +254,88 @@ Matrix* Matrix::inv(Matrix* A) {
 	}
 }
 
-Matrix* Matrix::pow(Matrix* A, int x) {
-	if (A->initialised) {
-		Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
+Matrix& Matrix::pow(Matrix& A, int x) {
+	if (A.initialised) {
+		Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
 		R->setIdentity();
 		for (int c1 = 1; c1 <= x; c1++) {
-			R = Matrix::mul(A, R);
+			*R = Matrix::mul(A, *R);
 		}
-		return R;
+		return *R;
 	} else {
 		// Error! Cannot perform matrix operations before initialisation
 		throw (101);
 	}
 }
 
-Matrix* Matrix::taylorMExp(Matrix* A, int k) {
+Matrix& Matrix::taylorMExp(Matrix& A, int k) {
 	double nfact = 1;
 	double coef;
-	Matrix* An;
-	Matrix* T;
-	Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
+	Matrix An;
+	Matrix T;
+	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
 	R->setIdentity();
 	for (int n = 1; n <= k; n++) {
 		nfact *= n;
 		coef = 1.0 / nfact;
 		An = Matrix::pow(A, n);
 		T = Matrix::mul(coef, An);
-		R = Matrix::add(R, T);
+		*R = Matrix::add(*R, T);
 	}
-	return R;
+	return *R;
 }
 
-Matrix* Matrix::padeMExp(Matrix* A, int k) {
-	Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
-
+Matrix& Matrix::padeMExp(Matrix& A) {
+	// Init
+	int c1, c2;
+	params params = getPadeParams(A); // s, m, powers
+	double s = params.scale;
+	int m = params.mVal;
+	std::vector<Matrix> p = params.powers;
+	std::vector<std::complex<double>> c = getPadeCoefficients(m);
+	int n = max(A.getNumRows(), A.getNumCols());
+	Matrix* R = new Matrix(A);
+	Matrix U;
+	Matrix V;
+	Matrix I(A.getNumRows(), A.getNumCols());
+	I.setIdentity();
+	// Scaling
+	if (s != 0) {
+		//R = R / (2.^s);
+		//Tpowers = cellfun(@rdivide, Tpowers, ...
+		//num2cell(2. ^ (s * (1:length(Tpowers)))), 'UniformOutput', false);
+	}
+	// Evaluate the Pade approximant.
+	if (m == 3 || m == 5 || m == 7 || m == 9) {
+		for (c1 = p.size() + 2; c1 < m - 1; c1 += 2) { //for (k = strt:2:m-1)
+			p[c1] = Matrix::mul(p[c1-2], p[2]);
+		}
+		U = Matrix::mul(c[2].real(), I);
+		V = Matrix::mul(c[1].real(), I);
+		for (c2 = m; c2 > 3; c2 -= 2) { //for (j = m : -2 : 3)
+			U = Matrix::add(U, Matrix::mul(c[c2 + 1].real(), p[c2 - 1]));
+			V = Matrix::add(V, Matrix::mul(c[c2].real(), p[c2 - 1]));
+		}
+		U = Matrix::mul(*R, U);
+	} else if (m == 13) {
+		U = *R * (p[6]*(c[14].real()*p[6] + c[12].real()*p[4] + c[10].real()*p[2]) + c[8].real()*p[6] + c[6].real()*p[4] + c[4].real()*p[2] + c[2].real()*I);
+		V = p[6]*(c[13].real()*p[6] + c[11].real()*p[4] + c[9].real()*p[2]) + c[7].real()*p[6] + c[5].real()*p[4] + c[3].real()*p[2] + c[1].real()*I;
+	}
+	Matrix F = (V-U)/(2*U) + I;  //F = (-U+V)\(U+V);
+	//if (recomputeDiags) {
+	//	F = recompute_block_diag(T, F, blockformat);
+	//}
+	//// Squaring phase.
+	//for (int k = 0; k < s; k++) {
+	//	F = F*F;
+	//	if (recomputeDiags) {
+	//		T = 2 * T;
+	//		F = recompute_block_diag(T, F, blockformat);
+	//	}
+	//}
 
 	R->setIdentity();
-	return R;
+	return *R;
 }
 
 //[m_vals, theta] = expmchk(A); % Initialization
@@ -453,39 +460,20 @@ Matrix* Matrix::padeMExp(Matrix* A, int k) {
 //	Matrix* F = Matrix::add(Matrix::div(Matrix::sub(V, U), (Matrix::mul(2, U))), I);
 //}
 
-std::complex<double> Matrix::max(std::complex<double> x, std::complex<double> y) {
-	if (x.real() > y.real()) {
-		return x;
-	} else {
-		return y;
-	}
-}
-
-std::complex<double> Matrix::min(std::complex<double> x, std::complex<double> y) {
-	if (x.real() < y.real()) {
-		return x;
-	} else {				// Should max/min find result from real or complex part?
-		return y;
-	}
-}
-
-double Matrix::ell(Matrix* A, std::vector<std::complex<double>> coef, int m) {
+double Matrix::ell(Matrix& A, double coef, int m) {
 	//Matrix* scaledA = coef. ^ (1 / (2 * m_val + 1)).*abs(T);
 	//alpha = normAm(scaledA, 2 * m_val + 1) / oneNorm(T);
 	//t = max(ceil(log2(2 * alpha / eps(class(alpha))) / (2 * m_val)), 0);
 	return 0;
 }
 
-std::complex<double> Matrix::oneNorm(Matrix* A) {
-	std::complex<double> test(0, 0);
-	return test;
-}
-
-int Matrix::getPadeParams(Matrix* A) {
-	int m, s = 0;
-	std::complex<double> d4, d6, d8, d10, eta1, eta3, eta4, eta5;
-	std::vector<std::complex<double>> coef, theta;
-	std::vector<Matrix*> powers;
+Matrix::params Matrix::getPadeParams(Matrix& A) {
+	params p;
+	int d4, d6, d8, d10;
+	int eta1, eta3, eta4, eta5;
+	std::vector<double> coef, theta;
+	std::vector<Matrix> powers;
+	p.scale = 0;
 	coef = {
 		(1 / 100800),
 		(1 / 10059033600),
@@ -508,51 +496,50 @@ int Matrix::getPadeParams(Matrix* A) {
 		4.458935413036850e+000,
 		5.371920351148152e+000
 	};
-	powers[2] = Matrix::mul(A, A);
-	powers[4] = Matrix::mul(powers[2], powers[2]);
-	powers[6] = Matrix::mul(powers[2], powers[4]);
-	//d4;// = oneNorm(powers[4]) ^ (1 / 4);
-	//d6;// = oneNorm(powers[6]) ^ (1 / 6);
-	//d8;
-	//eta1;// = max(d4, d6);
-	//if (eta1 <= theta[1] && ell(A, coef[1], 3) == 0) {
-	//	m = 3;
-	//	return;
-	//}
-	//if (eta1 <= theta[2] && ell(A, coef[2], 5) == 0) {
-	//	m = 5;
-	//	return;
-	//}
-	//bool isSmall = size(T, 1) < 150;
-	//if (isSmall) {
-	//	d8 = oneNorm(Matrix::mul(powers[4], powers[4])) ^ (1 / 8);
-	//} else {
-	//	d8 = normAm(powers[4], 2) ^ (1 / 8);
-	//}
-	//eta3 = max(d6, d8);
-	//if (eta3 <= theta[3] && ell(A, coef[3], 7) == 0) {
-	//	m = 7;
-	//	return;
-	//}
-	//if (eta3 <= theta[4] && ell(A, coef[4], 9) == 0) {
-	//	m = 9;
-	//	return;
-	//}
-	//if (isSmall) {
-	//	d10 = oneNorm(Matrix::mul(powers[4], powers[6]), 1) ^ (1 / 10);
-	//} else {
-	//	d10 = normAm(powers[2], 5) ^ (1 / 10);
-	//}
-	//	eta4 = max(d8, d10);
-	//eta5 = min(eta3, eta4);
-	//s = max(ceil(log2(eta5 / theta[5])), 0);
-	//s = s + ell(T / 2 ^ s, coef[5], 13);
-	//if (isinf(s)) {
-	//	[t, s] = log2(oneNorm(A) / theta.end());
-	//	s = s - (t == 0.5); //adjust s if normA / theta(end) is a power of 2.
-	//}
-	m = 13;
-	return m;
+	p.powers[2] = Matrix::mul(A, A);
+	p.powers[4] = Matrix::mul(p.powers[2], p.powers[2]);
+	p.powers[6] = Matrix::mul(p.powers[2], p.powers[4]);
+	d4 = (int) (std::pow(p.powers[4].getNorm(1), (1 / 4)));
+	d6 = (int) (std::pow(p.powers[6].getNorm(1), (1 / 6)));
+	eta1 = max(d4, d6);
+	if (eta1 <= theta[1] && ell(A, coef[1], 3) == 0) {
+		p.mVal = 3;
+		return p;
+	}
+	if (eta1 <= theta[2] && ell(A, coef[2], 5) == 0) {
+		p.mVal = 5;
+		return p;
+	}
+	if (A.isSmall()) {
+		d8 = (int) (Matrix::mul(powers[4], powers[4]).getNorm(1));
+		d8 = (int) (d8 ^ (1 / 8));
+	} else {
+		//d8 = normAm(powers[4], 2) ^ (1 / 8);
+	}
+	eta3 = max(d6, d8);
+	if (eta3 <= theta[3] && ell(A, coef[3], 7) == 0) {
+		p.mVal = 7;
+		return p;
+	}
+	if (eta3 <= theta[4] && ell(A, coef[4], 9) == 0) {
+		p.mVal = 9;
+		return p;
+	}
+	if (A.isSmall()) {
+		d10 = (int) (std::pow((powers[4] * powers[6]).getNorm(1), 1.0 / 10));
+	} else {
+		//d10 = normAm(powers[2], 5) ^ (1 / 10);
+	}
+	eta4 = max(d8, d10);
+	eta5 = min(eta3, eta4);
+	p.scale = max(ceil(log2(eta5 / theta[5])), 0.0);
+	p.scale += ell(pow(Matrix::div(A, 2), p.scale), coef[5], 13);
+	if (p.scale == INFINITY) {
+		//[t, s] = log2(norm(A, 1) / theta.end());
+		//s = s - (t == 0.5); //adjust s if normA / theta(end) is a power of 2.
+	}
+	p.mVal = 13;
+	return p;
 }
 
 std::vector<std::complex<double>> Matrix::getPadeCoefficients(int m) {
@@ -572,25 +559,25 @@ std::vector<std::complex<double>> Matrix::getPadeCoefficients(int m) {
 	return coef;
 }
 
-Matrix* Matrix::diagonalMExp(Matrix* A) {
-	Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
-	for (int c1 = 0; c1 < A->getNumRows(); c1++) {
-		R->setCell(c1, c1, exp(A->getCell(c1, c1)));
+Matrix& Matrix::diagonalMExp(Matrix& A) {
+	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
+	for (int c1 = 0; c1 < A.getNumRows(); c1++) {
+		R->setCell(c1, c1, exp(A.getCell(c1, c1)));
 	}
-	return R;
+	return *R;
 }
 
-Matrix* Matrix::zeroMExp(Matrix* A) {
-	Matrix* R = new Matrix(A->getNumRows(), A->getNumCols());
-	return R;
+Matrix& Matrix::zeroMExp(Matrix& A) {
+	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
+	return *R;
 }
 
-Matrix* Matrix::mExp(Matrix* A, char method, int k) {
-	if (A->initialised) {
+Matrix& Matrix::mExp(Matrix& A, char method, int k) {
+	if (A.initialised) {
 		// Special Cases
-		if (A->isDiagonal()) {
+		if (A.isDiagonal()) {
 			return diagonalMExp(A);
-		} else if (A->isZero()) {
+		} else if (A.isZero()) {
 			return zeroMExp(A);
 		}
 		// Ordinary Cases
@@ -601,7 +588,7 @@ Matrix* Matrix::mExp(Matrix* A, char method, int k) {
 				case 't':
 					return taylorMExp(A, k);
 				case 'p':
-					return padeMExp(A, k);
+					return padeMExp(A);
 			}
 		}
 	} else {
@@ -693,6 +680,10 @@ const bool Matrix::isZero() {
 	}
 }
 
+const bool Matrix::isSmall() {
+	return max(numRows, numCols) < 150;
+}
+
 // Getters
 
 const std::complex<double> Matrix::getCell(int x) {
@@ -718,6 +709,43 @@ const int Matrix::getNumCols() {
 	} else {
 		// Error! Cannot determine number of columns in matrix before initialisation
 		throw (104);
+	}
+}
+
+const double Matrix::getNorm(int n) {
+	int c1, c2;
+	double sum, max = 0;
+	if (n == 1) {
+		// 1 Norm
+		for (c1 = 0; c1 < getNumCols(); c1++) {
+			sum = 0;
+			for (c2 = 0; c2 < getNumRows(); c2++) {
+				sum += abs(getCell(c1, c2).real());
+			}
+			if (sum > max) {
+				max = sum;
+			}
+		}
+		return max;
+	} else if (n == INFINITY) {
+		// Inf Norm
+		for (c1 = 0; c1 < getNumRows(); c1++) {
+			sum = 0;
+			for (c2 = 0; c2 < getNumCols(); c2++) {
+				sum += abs(getCell(c1, c2).real());
+			}
+			if (sum > max) {
+				max = sum;
+			}
+		}
+		return max;
+	} else {
+		// Euclidian
+		sum = 0;
+		for (c1 = 0; c1 < getNumCols()*getNumRows(); c1++) {
+			sum += std::pow(getCell(c1).real(), n);
+		}
+		return std::pow(sum, 1.0 / n);
 	}
 }
 
@@ -782,15 +810,49 @@ void Matrix::setRandom(double min, double max) {
 	}
 }
 
-// Operators
+// General Functions
 
-std::ostream& operator<<(std::ostream& oStream, Matrix* A) {
-	if (A->isInitialised()) {
+int max(int x, int y) {
+	if (x > y) {
+		return x;
+	} else {
+		return y;
+	}
+}
+
+double max(double x, double y) {
+	if (x > y) {
+		return x;
+	} else {
+		return y;
+	}
+}
+
+int min(int x, int y) {
+	if (x < y) {
+		return x;
+	} else {
+		return y;
+	}
+}
+
+double min(double x, double y) {
+	if (x < y) {
+		return x;
+	} else {
+		return y;
+	}
+}
+
+// Stream Operators
+
+std::ostream& operator<<(std::ostream& oStream, Matrix& A) {
+	if (A.isInitialised()) {
 		std::complex<double> cell;
-		for (int c1 = 0; c1 < A->getNumRows(); c1++) {
+		for (int c1 = 0; c1 < A.getNumRows(); c1++) {
 			oStream << "|";
-			for (int c2 = 0; c2 < A->getNumCols(); c2++) {
-				cell = A->getCell(c1, c2);
+			for (int c2 = 0; c2 < A.getNumCols(); c2++) {
+				cell = A.getCell(c1, c2);
 				if (abs(cell.real() - (int) (cell.real()) > 0)) {
 					// Decimal
 					oStream << " " << std::setprecision(3) << std::fixed << cell;
@@ -808,4 +870,44 @@ std::ostream& operator<<(std::ostream& oStream, Matrix* A) {
 	}
 
 	return oStream;
+}
+
+Matrix& operator+(Matrix& A, Matrix& B) {
+	return Matrix::add(A, B);
+}
+
+Matrix& operator+(Matrix& A, double B) {
+	return Matrix::add(A, B);
+}
+
+Matrix& operator+(double A, Matrix& B) {
+	return Matrix::add(B, A);
+}
+
+Matrix& operator-(Matrix& A, Matrix& B) {
+	return Matrix::sub(A, B);
+}
+
+Matrix& operator-(Matrix& A, double B) {
+	return Matrix::sub(A, B);
+}
+
+Matrix& operator*(Matrix& A, Matrix& B) {
+	return Matrix::mul(A, B);
+}
+
+Matrix& operator*(Matrix& A, double B) {
+	return Matrix::mul(B, A);
+}
+
+Matrix& operator*(double A, Matrix& B) {
+	return Matrix::mul(A, B);
+}
+
+Matrix& operator/(Matrix& A, Matrix& B) {
+	return Matrix::div(A, B);
+}
+
+Matrix& operator/(Matrix& A, double B) {
+	return Matrix::div(A, B);
 }
