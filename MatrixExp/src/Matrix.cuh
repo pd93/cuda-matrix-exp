@@ -20,9 +20,6 @@
 #include <random>
 #include <iomanip>
 #include <math.h>
-// Include CUDA Stuff
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
 
 class Matrix {
 public:
@@ -92,10 +89,12 @@ public:
 };
 
 // GENERAL FUNCTIONS
-int max(int x, int y);
-double max(double x, double y);
-int min(int x, int y);
-double min(double x, double y);
+namespace utils {
+	int max(int x, int y);
+	double max(double x, double y);
+	int min(int x, int y);
+	double min(double x, double y);
+}
 
 // OPERATOR OVERRIDES
 // <<

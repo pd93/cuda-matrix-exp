@@ -81,7 +81,7 @@ Matrix& Matrix::padeMExp(Matrix& A) {
 	std::vector<double> c = getPadeCoefficients(m);
 	// Init
 	int c1, c2;
-	int n = max(A.getNumRows(), A.getNumCols());
+	int n = utils::max(A.getNumRows(), A.getNumCols());
 	Matrix* R = new Matrix(A);
 	Matrix U;
 	Matrix V;
@@ -167,7 +167,7 @@ Matrix::params Matrix::getPadeParams(Matrix& A) {
 	p.powers[6] = Matrix::mul(p.powers[2], p.powers[4]);
 	d4 = (int) (std::pow(p.powers[4].getNorm(1), (1 / 4)));
 	d6 = (int) (std::pow(p.powers[6].getNorm(1), (1 / 6)));
-	eta1 = max(d4, d6);
+	eta1 = utils::max(d4, d6);
 	if (eta1 <= theta[1] && ell(A, coef[1], 3) == 0) {
 		p.mVal = 3;
 		return p;
@@ -182,7 +182,7 @@ Matrix::params Matrix::getPadeParams(Matrix& A) {
 	} else {
 		//d8 = normAm(powers[4], 2) ^ (1 / 8);
 	}
-	eta3 = max(d6, d8);
+	eta3 = utils::max(d6, d8);
 	if (eta3 <= theta[3] && ell(A, coef[3], 7) == 0) {
 		p.mVal = 7;
 		return p;
@@ -196,9 +196,9 @@ Matrix::params Matrix::getPadeParams(Matrix& A) {
 	} else {
 		//d10 = normAm(powers[2], 5) ^ (1 / 10);
 	}
-	eta4 = max(d8, d10);
-	eta5 = min(eta3, eta4);
-	p.scale = max((int) (ceil(log2(eta5 / theta[5]))), 0);
+	eta4 = utils::max(d8, d10);
+	eta5 = utils::min(eta3, eta4);
+	p.scale = utils::max((int) (ceil(log2(eta5 / theta[5]))), 0);
 	//p.scale += ell(pow((A / 2), p.scale), coef[5], 13);
 	if (p.scale == INFINITY) {
 		//[t, s] = log2(norm(A, 1) / theta.end());
@@ -562,7 +562,7 @@ bool Matrix::isZero() {
 }
 // Check if a matrix is "small"
 bool Matrix::isSmall() {
-	return max(numRows, numCols) < 150;
+	return utils::max(numRows, numCols) < 150;
 }
 
 // GETTERS
@@ -696,7 +696,7 @@ void Matrix::setRandom(double min, double max) {
 // GENERAL FUNCTIONS
 
 // Find the maximum of 2 integers
-int max(int x, int y) {
+int utils::max(int x, int y) {
 	if (x > y) {
 		return x;
 	} else {
@@ -704,7 +704,7 @@ int max(int x, int y) {
 	}
 }
 // Find the maximum of 2 doubles
-double max(double x, double y) {
+double utils::max(double x, double y) {
 	if (x > y) {
 		return x;
 	} else {
@@ -712,7 +712,7 @@ double max(double x, double y) {
 	}
 }
 // Find the minimum of 2 integers
-int min(int x, int y) {
+int utils::min(int x, int y) {
 	if (x < y) {
 		return x;
 	} else {
@@ -720,7 +720,7 @@ int min(int x, int y) {
 	}
 }
 // Find the minimum of 2 doubles
-double min(double x, double y) {
+double utils::min(double x, double y) {
 	if (x < y) {
 		return x;
 	} else {
@@ -761,8 +761,6 @@ std::ostream& operator<<(std::ostream& oStream, Matrix& A) {
 		// Error! Cannot print matrix before initialisation
 		throw (102);
 	}
-
-	return oStream;
 }
 // +
 Matrix& operator+(Matrix& A, Matrix& B) {
