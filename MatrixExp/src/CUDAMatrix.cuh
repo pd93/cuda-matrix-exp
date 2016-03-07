@@ -12,11 +12,11 @@
 // Precompiler include check
 #ifndef cudamatrix_h
 #define cudamatrix_h
-// Include C/C++ stuff
+// Include Matrix Class
 #include "Matrix.cuh"
-// Include CUDA Stuff
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
+
+// KERNELS
+//__global__ void cudaAdd(std::vector<std::complex<double>> A, std::vector<std::complex<double>> B, std::vector<std::complex<double>> R);
 
 class CUDAMatrix: public Matrix {
 private:

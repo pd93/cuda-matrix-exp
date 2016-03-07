@@ -11,6 +11,12 @@
 
 // Include header file
 #include "CUDAMatrix.cuh"
+// Include additional CUDA files
+#include <thrust/functional.h>
+#include <thrust/iterator/permutation_iterator.h>
+#include <thrust/iterator/counting_iterator.h>
+#include <thrust/iterator/transform_iterator.h>
+#include <thrust/transform.h>
 
 // INTERNAL MATRIX OPERATIONS
 
@@ -36,6 +42,12 @@ Matrix& CUDAMatrix::diagonalMExp(Matrix& A) {
 	return A;
 }
 
+// KERNELS
+
+//__global__ void cudaAdd(std::vector<std::complex<double>>* A, std::vector<std::complex<double>>* B, std::vector<std::complex<double>> R) {
+//
+//}
+
 // EXTERNAL MATRIX OPERATIONS
 
 // Adds two matrices together
@@ -46,7 +58,16 @@ Matrix& CUDAMatrix::add(Matrix& A, Matrix& B) {
 		int br = B.getNumRows();
 		int bc = B.getNumCols();
 		if (ar == br && ac == bc) {
-			return A;
+			// Allocate memory and copy to device
+			Matrix* R = new Matrix(ar, ac);
+			thrust::device_vector<thrust::complex<double>> d_A = A.getMatrix();
+			thrust::device_vector<thrust::complex<double>> d_B = B.getMatrix();
+			thrust::device_vector<thrust::complex<double>> d_R = R->getMatrix();
+			// Call kernel
+			
+			// Copy result back to host
+			R->setMatrix(d_R);
+			return *R;
 		} else {
 			// Error! Cannot add these matrices
 			throw (201);

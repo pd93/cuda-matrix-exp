@@ -20,6 +20,12 @@
 #include <random>
 #include <iomanip>
 #include <math.h>
+// Include CUDA Stuff
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+#include <thrust\host_vector.h>
+#include <thrust\device_vector.h>
+#include <thrust\complex.h>
 
 class Matrix {
 public:
@@ -27,11 +33,11 @@ public:
 	struct params {
 		int scale;
 		int mVal;
-		std::vector<Matrix> powers;
+		thrust::host_vector<Matrix> powers;
 	};
 protected:
 	// VARIABLES
-	std::vector<std::complex<double>> matrix;
+	thrust::host_vector<thrust::complex<double>> matrix;
 	int numRows, numCols;
 	bool initialised;
 private:
@@ -40,7 +46,7 @@ private:
 	static Matrix& padeMExp(Matrix& A);
 	static int ell(Matrix& A, double coef, int m);
 	static params getPadeParams(Matrix& A);
-	static std::vector<double> getPadeCoefficients(int m);
+	static thrust::host_vector<double> getPadeCoefficients(int m);
 	static Matrix& diagonalMExp(Matrix& A);
 	static Matrix& zeroMExp(Matrix& A);
 public:
@@ -73,17 +79,18 @@ public:
 	bool isZero();
 	bool isSmall();
 	// GETTERS
-	std::complex<double> getCell(int x);
-	std::complex<double> getCell(int row, int col);
+	thrust::complex<double> getCell(int x);
+	thrust::complex<double> getCell(int row, int col);
 	int getNumRows();
 	int getNumCols();
+	thrust::host_vector<thrust::complex<double>> Matrix::getMatrix();
 	double getNorm(int n = 2);
 	// SETTERS
-	void setCell(int x, std::complex<double>);
-	void setCell(int row, int col, std::complex<double>);
+	void setCell(int x, thrust::complex<double>);
+	void setCell(int row, int col, thrust::complex<double>);
 	void setNumRows(int inNumRows);
 	void setNumCols(int inNumCols);
-	void setMatrix(std::vector<std::complex<double>> inMatrix);
+	void setMatrix(thrust::host_vector<thrust::complex<double>> inMatrix);
 	void setZero();
 	void setIdentity();
 	void setRandom(double min, double max);
