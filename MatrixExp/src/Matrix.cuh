@@ -29,11 +29,12 @@ public:
 		int mVal;
 		std::vector<Matrix> powers;
 	};
-private:
+protected:
 	// VARIABLES
 	std::vector<std::complex<double>> matrix;
 	int numRows, numCols;
 	bool initialised;
+private:
 	// INTERNAL MATRIX OPERATIONS
 	static Matrix& taylorMExp(Matrix& A, int k);
 	static Matrix& padeMExp(Matrix& A);

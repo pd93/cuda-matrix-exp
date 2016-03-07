@@ -242,7 +242,7 @@ Matrix& Matrix::zeroMExp(Matrix& A) {
 
 // Adds two matrices together
 Matrix& Matrix::add(Matrix& A, Matrix& B) {
-	if (A.initialised && B.initialised) {
+	if (A.isInitialised() && B.isInitialised()) {
 		int ar = A.getNumRows();
 		int ac = A.getNumCols();
 		int br = B.getNumRows();
@@ -264,7 +264,7 @@ Matrix& Matrix::add(Matrix& A, Matrix& B) {
 }
 // Adds a scalar to a matrix
 Matrix& Matrix::add(Matrix& A, double x) {
-	if (A.initialised) {
+	if (A.isInitialised()) {
 		int ar = A.getNumRows();
 		int ac = A.getNumCols();
 		Matrix *R = new Matrix(ar, ac);
@@ -279,7 +279,7 @@ Matrix& Matrix::add(Matrix& A, double x) {
 }
 // Subtracts one matrix from another
 Matrix& Matrix::sub(Matrix& A, Matrix& B) {
-	if (A.initialised && B.initialised) {
+	if (A.isInitialised() && B.isInitialised()) {
 		int ar = A.getNumRows();
 		int ac = A.getNumCols();
 		int br = B.getNumRows();
@@ -301,7 +301,7 @@ Matrix& Matrix::sub(Matrix& A, Matrix& B) {
 }
 // Subtracts a scalar from a matrix
 Matrix& Matrix::sub(Matrix& A, double x) {
-	if (A.initialised) {
+	if (A.isInitialised()) {
 		int ar = A.getNumRows();
 		int ac = A.getNumCols();
 		Matrix* R = new Matrix(ar, ac);
@@ -316,7 +316,7 @@ Matrix& Matrix::sub(Matrix& A, double x) {
 }
 // Multiplies two matrices together
 Matrix& Matrix::mul(Matrix& A, Matrix& B) {
-	if (A.initialised && B.initialised) {
+	if (A.isInitialised() && B.isInitialised()) {
 		int ar = A.getNumRows();
 		int ac = A.getNumCols();
 		int br = B.getNumRows();
@@ -345,7 +345,7 @@ Matrix& Matrix::mul(Matrix& A, Matrix& B) {
 }
 // Multiplies a matrix by a scalar
 Matrix& Matrix::mul(double x, Matrix& A) {
-	if (A.initialised) {
+	if (A.isInitialised()) {
 		int ar = A.getNumRows();
 		int ac = A.getNumCols();
 		Matrix* R = new Matrix(ar, ac);
@@ -370,7 +370,7 @@ Matrix& Matrix::div(Matrix& A, double x) {
 }
 // Finds the inverse of a matrix
 Matrix& Matrix::inv(Matrix& A) {
-	if (A.initialised) {
+	if (A.isInitialised()) {
 		int ar = A.getNumRows();
 		int ac = A.getNumCols();
 		if (ar == ac) {
@@ -438,7 +438,7 @@ Matrix& Matrix::inv(Matrix& A) {
 }
 // Finds the nth power of a matrix
 Matrix& Matrix::pow(Matrix& A, int x) {
-	//if (A.initialised) {
+	//if (A.isInitialised()) {
 	//	Matrix* R = new Matrix(A.getNumRows(), A.getNumCols());
 	//	R->setIdentity();
 	//	for (int c1 = 1; c1 <= x; c1++) {
@@ -453,7 +453,7 @@ Matrix& Matrix::pow(Matrix& A, int x) {
 }
 // Finds the exponential of a matrix
 Matrix& Matrix::mExp(Matrix& A, char method, int k) {
-	if (A.initialised) {
+	if (A.isInitialised()) {
 		// Special Cases
 		if (A.isDiagonal()) {
 			return diagonalMExp(A);
