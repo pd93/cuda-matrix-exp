@@ -12,46 +12,42 @@
 // Precompiler include check
 #ifndef cudamatrix_h
 #define cudamatrix_h
-// Include Matrix Class
-#include "Matrix.cuh"
+// Include C/C++ stuff
+#include <vector>
+#include <iostream>
+#include <math.h>
+#include <iomanip>
+//#include <string>
+//#include <complex>
+//#include <random>
+// Include CUDA Stuff
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
 
-// KERNELS
-//__global__ void cudaAdd(std::vector<std::complex<double>> A, std::vector<std::complex<double>> B, std::vector<std::complex<double>> R);
-
-class CUDAMatrix: public Matrix {
+class CUDAMatrix {
 private:
-	// INTERNAL MATRIX OPERATIONS
-	static Matrix& taylorMExp(Matrix& A, int k);
-	static Matrix& padeMExp(Matrix& A);
-	static int ell(Matrix& A, double coef, int m);
-	static params getPadeParams(Matrix& A);
-	static Matrix& diagonalMExp(Matrix& A);
+	// VARIABLES
+	double* d_matrix;
+	int numRows, numCols;
+	size_t size;
+	bool initialised;
 public:
-	// INTERNAL MATRIX OPERATIONS
-	static Matrix& add(Matrix& A, Matrix& B);
-	static Matrix& add(Matrix& A, double x);
-	static Matrix& sub(Matrix& A, Matrix& B);
-	static Matrix& sub(Matrix& A, double x);
-	static Matrix& mul(Matrix& A, Matrix& B);
-	static Matrix& mul(double x, Matrix& A);
-	static Matrix& div(Matrix& A, Matrix& B);
-	static Matrix& div(Matrix& A, double x);
-	static Matrix& inv(Matrix& A);
-	static Matrix& pow(Matrix& A, int x);
+	// CONSTRUCTORS
+	CUDAMatrix();
+	CUDAMatrix(int inNumRowsCols);
+	CUDAMatrix(int inNumRows, int inNumCols);
+	CUDAMatrix(int inNumRowsCols, std::vector<double> h_matrix);
+	CUDAMatrix(int inNumRows, int inNumCols, std::vector<double> h_matrix);
+	void init(int inNumRows, int inNumCols, std::vector<double> h_matrix);
+	// DESTRUCTOR
+	~CUDAMatrix();
 	// BOOLEANS
 	bool isInitialised();
-	bool isSquare();
-	bool isDiagonal();
-	bool isScalar();
-	bool isIdentity();
-	bool isZero();
-	bool isSmall();
 	// GETTERS
-	double getNorm(int n = 2);
-	// SETTERS
-	void setZero();
-	void setIdentity();
-	void setRandom(double min, double max);
+	std::vector<double> getMatrix();
+	int getNumRows();
+	int getNumCols();
+	size_t getSize();
 };
 
 #endif

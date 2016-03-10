@@ -10,7 +10,7 @@
 //
 
 // Include header file
-#include "Matrix.cuh"
+#include "Matrix.hpp"
 
 // CONSTRUCTORS
 
@@ -29,12 +29,12 @@ Matrix::Matrix(int inNumRows, int inNumCols) {
 // Creates an instance of a square matrix and assigns a value to it
 Matrix::Matrix(std::vector<std::complex<double>> inMatrix, int inNumRowsCols) {
 	init(inNumRowsCols, inNumRowsCols);
-	setMatrix(thrust::host_vector<double>(inMatrix));
+	setMatrix(inMatrix);
 }
 // Creates an instance of an (n x m) matrix and assigns a value to it
 Matrix::Matrix(std::vector<std::complex<double>> inMatrix, int inNumRows, int inNumCols) {
 	init(inNumRows, inNumCols);
-	setMatrix(thrust::host_vector<double>(inMatrix));
+	setMatrix(inMatrix);
 }
 // Copy constructor. Copies one instance of a matrix to a new instance
 Matrix::Matrix(const Matrix &obj) {
@@ -77,8 +77,8 @@ Matrix& Matrix::padeMExp(Matrix& A) {
 	params params = getPadeParams(A);
 	double s = params.scale;
 	int m = params.mVal;
-	thrust::host_vector<Matrix> p = params.powers;
-	thrust::host_vector<double> c = getPadeCoefficients(m);
+	std::vector<Matrix> p = params.powers;
+	std::vector<double> c = getPadeCoefficients(m);
 	// Init
 	int c1, c2;
 	int n = utils::max(A.getNumRows(), A.getNumCols());
@@ -208,8 +208,8 @@ Matrix::params Matrix::getPadeParams(Matrix& A) {
 	return p;
 }
 // Gets the coefficients needed for the pade approximation
-thrust::host_vector<double> Matrix::getPadeCoefficients(int m) {
-	thrust::host_vector<double> coef;
+std::vector<double> Matrix::getPadeCoefficients(int m) {
+	std::vector<double> coef;
 	switch (m) {
 		case 3:
 			coef = std::vector<double> { 120, 60, 12, 1 };
@@ -379,7 +379,7 @@ Matrix& Matrix::inv(Matrix& A) {
 			Matrix* R = new Matrix(ar, ac);
 			int c1, c2, c3;
 			int n = ac;
-			thrust::complex<double> cell, tmp;
+			std::complex<double> cell, tmp;
 			// Copy A into P (Left side)
 			for (c1 = 0; c1 < n; c1++) {
 				for (c2 = 0; c2 < n; c2++) {
@@ -568,11 +568,11 @@ bool Matrix::isSmall() {
 // GETTERS
 
 // Get the contents of a matrix cell using a single index
-thrust::complex<double> Matrix::getCell(int x) {
+std::complex<double> Matrix::getCell(int x) {
 	return matrix[x];
 }
 // Get the contents of a matrix cell using two indices
-thrust::complex<double> Matrix::getCell(int row, int col) {
+std::complex<double> Matrix::getCell(int row, int col) {
 	return matrix[row*numCols+col];
 }
 // Get the number of rows in a matrix
@@ -594,7 +594,7 @@ int Matrix::getNumCols() {
 	}
 }
 // Get the value of the matrix
-thrust::host_vector<thrust::complex<double>> Matrix::getMatrix() {
+std::vector<std::complex<double>> Matrix::getMatrix() {
 	return matrix;
 }
 // Find the normal of a matrix
@@ -638,11 +638,11 @@ double Matrix::getNorm(int n) {
 // SETTERS
 
 // Set the value of a matrix cell using a single index
-void Matrix::setCell(int x, thrust::complex<double> value) {
+void Matrix::setCell(int x, std::complex<double> value) {
 	matrix[x] = value;
 }
 // Set the value of a matrix cell using two indices
-void Matrix::setCell(int row, int col, thrust::complex<double> value) {
+void Matrix::setCell(int row, int col, std::complex<double> value) {
 	matrix[row*numCols + col] = value;
 }
 // Set the number of rows in a matrix
@@ -654,7 +654,7 @@ void Matrix::setNumCols(int inNumCols) {
 	numCols = inNumCols;
 }
 // Set the value of a matrix
-void Matrix::setMatrix(thrust::host_vector<thrust::complex<double>> inMatrix) {
+void Matrix::setMatrix(std::vector<std::complex<double>> inMatrix) {
 	matrix = inMatrix;
 }
 // Set the matrix to a zero matrix

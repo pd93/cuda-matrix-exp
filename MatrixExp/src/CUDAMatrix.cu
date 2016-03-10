@@ -11,307 +11,99 @@
 
 // Include header file
 #include "CUDAMatrix.cuh"
-// Include additional CUDA files
-#include <thrust/functional.h>
-#include <thrust/iterator/permutation_iterator.h>
-#include <thrust/iterator/counting_iterator.h>
-#include <thrust/iterator/transform_iterator.h>
-#include <thrust/transform.h>
 
-// INTERNAL MATRIX OPERATIONS
+// Kernels
 
-// Finds the exponential of a matrix using the Taylor Series
-Matrix& CUDAMatrix::taylorMExp(Matrix& A, int k) {
-	return A;
+// CONSTRUCTORS
+
+// Default constructor. Creates an uninitialsed instance of a matrix
+CUDAMatrix::CUDAMatrix() {
+	initialised = false;
 }
-// Finds the exponential of a matrix using the Pade Approximation
-Matrix& CUDAMatrix::padeMExp(Matrix& A) {
-	return A;
+// Creates an instance of a square matrix and initialises it
+CUDAMatrix::CUDAMatrix(int inNumRowsCols) {
+	std::vector<double> h_matrix(inNumRowsCols*inNumRowsCols);
+	init(inNumRowsCols, inNumRowsCols, h_matrix);
 }
-// Something to do with pade scaling                                   NEEDS AMMENDING
-int CUDAMatrix::ell(Matrix& A, double coef, int m) {
-	return 0;
+// Creates an instance of an (n x m) matrix and initialises it
+CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols) {
+	std::vector<double> h_matrix(inNumRows*inNumCols);
+	init(inNumRows, inNumCols, h_matrix);
 }
-// Gets the parameters needed for the pade approximation
-CUDAMatrix::params CUDAMatrix::getPadeParams(Matrix& A) {
-	params p;
-	return p;
+// Creates an instance of a square matrix and assigns a value to it
+CUDAMatrix::CUDAMatrix(int inNumRowsCols, std::vector<double> h_matrix) {
+	init(inNumRowsCols, inNumRowsCols, h_matrix);
 }
-// Finds the exponential of a diagonal matrix
-Matrix& CUDAMatrix::diagonalMExp(Matrix& A) {
-	return A;
+// Creates an instance of an (n x m) matrix and assigns a value to it
+CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols, std::vector<double> h_matrix) {
+	init(inNumRows, inNumCols, h_matrix);
+}
+// Initialiser. Resizes the matrix and sets the values to 0
+void CUDAMatrix::init(int inNumRows, int inNumCols, std::vector<double> h_matrix) {
+	size = sizeof(double)*inNumRows*inNumCols;
+	//cudaMalloc(&d_matrix, size);
+	//cudaMemcpy(d_matrix, &h_matrix, size, cudaMemcpyHostToDevice);
+	initialised = true;
 }
 
-// KERNELS
+// DESTRUCTOR
 
-//__global__ void cudaAdd(std::vector<std::complex<double>>* A, std::vector<std::complex<double>>* B, std::vector<std::complex<double>> R) {
-//
-//}
-
-// EXTERNAL MATRIX OPERATIONS
-
-// Adds two matrices together
-Matrix& CUDAMatrix::add(Matrix& A, Matrix& B) {
-	if (A.isInitialised() && B.isInitialised()) {
-		int ar = A.getNumRows();
-		int ac = A.getNumCols();
-		int br = B.getNumRows();
-		int bc = B.getNumCols();
-		if (ar == br && ac == bc) {
-			// Allocate memory and copy to device
-			Matrix* R = new Matrix(ar, ac);
-			thrust::device_vector<thrust::complex<double>> d_A = A.getMatrix();
-			thrust::device_vector<thrust::complex<double>> d_B = B.getMatrix();
-			thrust::device_vector<thrust::complex<double>> d_R = R->getMatrix();
-			// Call kernel
-			
-			// Copy result back to host
-			R->setMatrix(d_R);
-			return *R;
-		} else {
-			// Error! Cannot add these matrices
-			throw (201);
-		}
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
+CUDAMatrix::~CUDAMatrix() {
+	//cudaFree(d_matrix);
 }
-// Adds a scalar to a matrix
-Matrix& CUDAMatrix::add(Matrix& A, double x) {
-	if (A.isInitialised()) {
-		return A;
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
-}
-// Subtracts one matrix from another
-Matrix& CUDAMatrix::sub(Matrix& A, Matrix& B) {
-	if (A.isInitialised() && B.isInitialised()) {
-		int ar = A.getNumRows();
-		int ac = A.getNumCols();
-		int br = B.getNumRows();
-		int bc = B.getNumCols();
-		if (ar == br && ac == bc) {
-			return A;
-		} else {
-			// Error! Cannot subtract these matrices
-			throw (201);
-		}
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
-}
-// Subtracts a scalar from a matrix
-Matrix& CUDAMatrix::sub(Matrix& A, double x) {
-	if (A.isInitialised()) {
-		return A;
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
-}
-// Multiplies two matrices together
-Matrix& CUDAMatrix::mul(Matrix& A, Matrix& B) {
-	if (A.isInitialised() && B.isInitialised()) {
-		int ar = A.getNumRows();
-		int ac = A.getNumCols();
-		int br = B.getNumRows();
-		int bc = B.getNumCols();
-		if (ac == br) {
-			return A;
-		} else {
-			// Error! Cannot multiply these matrices together
-			throw (203);
-		}
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
-}
-// Multiplies a matrix by a scalar
-Matrix& CUDAMatrix::mul(double x, Matrix& A) {
-	if (A.isInitialised()) {
-		return A;
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
-}
-// Finds the inverse of a matrix
-Matrix& CUDAMatrix::inv(Matrix& A) {
-	if (A.isInitialised()) {
-		int ar = A.getNumRows();
-		int ac = A.getNumCols();
-		if (ar == ac) {
-			return A;
-		} else {
-			// Error! Cannot find the inverse of this matrix
-			throw (205);
-		}
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
-}
-// Finds the nth power of a matrix
-Matrix& CUDAMatrix::pow(Matrix& A, int x) {
-	if (A.isInitialised()) {
-		return A;
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
-}
-// Finds the exponential of a matrix
 
 // BOOLEANS
 
-// Check if a matrix is diagonal
-bool CUDAMatrix::isDiagonal() {
-	if (initialised) {
-		for (int c1 = 0; c1 < numRows; c1++) {
-			for (int c2 = 0; c2 < numCols; c2++) {
-				if (c1 != c2 && getCell(c1, c2).real() != 0) {
-					return false;
-				}
-			}
-		}
-		return true;
-	} else {
-		// Error! Cannot determine if matrix is diagonal before initialisation
-		throw (106);
-	}
-}
-// Check if a matrix is a scalar matrix
-bool CUDAMatrix::isScalar() {
-	if (initialised) {
-		for (int c1 = 0; c1 < numRows; c1++) {
-			for (int c2 = 0; c2 < numCols; c2++) {
-				if ((c1 != c2 && getCell(c1, c2).real() != 0) || (c1 == c2 && getCell(c1, c2) != getCell(0, 0))) {
-					return false;
-				}
-			}
-		}
-		return true;
-	} else {
-		// Error! Cannot determine if matrix is scalar before initialisation
-		throw (107);
-	}
-}
-// Check if a matrix is an identity matrix
-bool CUDAMatrix::isIdentity() {
-	if (initialised) {
-		for (int c1 = 0; c1 < numRows; c1++) {
-			for (int c2 = 0; c2 < numCols; c2++) {
-				if ((c1 != c2 && getCell(c1, c2).real() != 0) || (c1 == c2 && getCell(c1, c2).real() != 1)) {
-					return false;
-				}
-			}
-		}
-		return true;
-	} else {
-		// Error! Cannot determine if matrix is an identity matrix before initialisation
-		throw (108);
-	}
-}
-// Check if a matrix is a zero matrix
-bool CUDAMatrix::isZero() {
-	if (initialised) {
-		for (int c1 = 0; c1 < numRows; c1++) {
-			for (int c2 = 0; c2 < numCols; c2++) {
-				if (getCell(c1, c2).real() != 0) {
-					return false;
-				}
-			}
-		}
-		return true;
-	} else {
-		// Error! Cannot determine if matrix is a zero matrix before initialisation
-		throw (109);
-	}
+bool CUDAMatrix::isInitialised() {
+	return initialised;
 }
 
 // GETTERS
 
-// Find the normal of a matrix
-double CUDAMatrix::getNorm(int n) {
-	int c1, c2;
-	double sum, max = 0;
-	if (n == 1) {
-		// 1 Norm
-		for (c1 = 0; c1 < getNumCols(); c1++) {
-			sum = 0;
-			for (c2 = 0; c2 < getNumRows(); c2++) {
-				sum += abs(getCell(c1, c2).real());
-			}
-			if (sum > max) {
-				max = sum;
-			}
-		}
-		return max;
-	} else if (n == INFINITY) {
-		// Inf Norm
-		for (c1 = 0; c1 < getNumRows(); c1++) {
-			sum = 0;
-			for (c2 = 0; c2 < getNumCols(); c2++) {
-				sum += abs(getCell(c1, c2).real());
-			}
-			if (sum > max) {
-				max = sum;
-			}
-		}
-		return max;
-	} else {
-		// Euclidian
-		sum = 0;
-		for (c1 = 0; c1 < getNumCols()*getNumRows(); c1++) {
-			sum += std::pow(getCell(c1).real(), n);
-		}
-		return std::pow(sum, 1.0 / n);
-	}
+std::vector<double> CUDAMatrix::getMatrix() {
+	std::vector<double>* h_matrix;
+	h_matrix->resize(numRows*numCols);
+	// Fetch matrix from device
+	//cudaMemcpy(h_matrix, d_matrix, size, cudaMemcpyDeviceToHost);
+	return *h_matrix;
 }
 
-// SETTERS
+int CUDAMatrix::getNumRows() {
+	return numRows;
+}
 
-// Set the matrix to a zero matrix
-void CUDAMatrix::setZero() {
-	if (initialised) {
-		for (int c1 = 0; c1 < numRows*numCols; c1++) {
-			setCell(c1, 0);
-		}
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
+int CUDAMatrix::getNumCols() {
+	return numCols;
 }
-// Set the matrix to an identity matrix
-void CUDAMatrix::setIdentity() {
-	if (initialised) {
-		for (int c1 = 0; c1 < numRows; c1++) {
-			for (int c2 = 0; c2 < numCols; c2++) {
-				if (c1 == c2) {
-					setCell(c1, c2, 1);
-				} else {
-					setCell(c1, c2, 0);
-				}
-			}
-		}
-	} else {
-		// Error! Cannot perform matrix operations before initialisation
-		throw (101);
-	}
+
+size_t CUDAMatrix::getSize() {
+	return size;
 }
-// Set the matrix to a random matrix between limits
-void CUDAMatrix::setRandom(double min, double max) {
-	if (initialised) {
-		std::default_random_engine rng;
-		std::uniform_int_distribution<int> gen((int) floor(min), (int) floor(max));
-		for (int c1 = 0; c1 < numRows*numCols; c1++) {
-			int randomI = gen(rng);
-			setCell(c1, randomI);
-		}
-	}
-}
+
+// OPERATOR OVERRIDES
+
+// <<
+//std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
+//	std::vector<double> h_matrix = A.getMatrix();
+//	if (A.isInitialised()) {
+//		double cell;
+//		for (int c1 = 0; c1 < A.getNumRows(); c1++) {
+//			oStream << "|";
+//			for (int c2 = 0; c2 < A.getNumCols(); c2++) {
+//				cell = h_matrix[c1*c2+c1];
+//				if (abs(cell - (int) (cell) != 0)) {
+//					// Decimal
+//					oStream << " " << std::setprecision(3) << std::fixed << cell;
+//				} else {
+//					// Integer
+//					oStream << " " << std::setprecision(0) << std::fixed << cell;
+//				}
+//			}
+//			oStream << " |" << std::endl;
+//		}
+//		return oStream;
+//	} else {
+//		// Error! Cannot print matrix before initialisation
+//		throw (102);
+//	}
+//}

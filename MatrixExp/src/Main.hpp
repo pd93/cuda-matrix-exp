@@ -9,7 +9,8 @@
 // Moderator:  Dr. Irena Spasic
 //
 
-#include "Matrix.cuh"
+//#include "Matrix.hpp"
+#include "CUDAMatrix.cu"
 #include <chrono>
 
 int main(int argc, char **argv);

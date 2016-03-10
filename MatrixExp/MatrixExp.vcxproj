@@ -152,13 +152,13 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="src\CUDAMatrix.cu" />
-    <CudaCompile Include="src\Main.cu" />
-    <CudaCompile Include="src\Matrix.cu" />
+    <CudaCompile Include="src\Main.cpp" />
+    <CudaCompile Include="src\Matrix.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\CUDAMatrix.cuh" />
-    <ClInclude Include="src\Main.cuh" />
-    <ClInclude Include="src\Matrix.cuh" />
+    <ClInclude Include="src\Main.hpp" />
+    <ClInclude Include="src\Matrix.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
