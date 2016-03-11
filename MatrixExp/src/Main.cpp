@@ -25,7 +25,7 @@ int main(int argc, char **argv) {
 			2, 1, 3 ,2, 1
 		});
 
-		//cout << A;
+		cout << A;
 
 		//chrono::high_resolution_clock::time_point start;
 		//chrono::high_resolution_clock::time_point end;

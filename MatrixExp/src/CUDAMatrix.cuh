@@ -27,7 +27,8 @@
 class CUDAMatrix {
 private:
 	// VARIABLES
-	double* d_matrix;
+	std::vector<double>* d_matrix;
+	std::vector<double>* h_matrix;
 	int numRows, numCols;
 	size_t size;
 	bool initialised;
@@ -36,9 +37,9 @@ public:
 	CUDAMatrix();
 	CUDAMatrix(int inNumRowsCols);
 	CUDAMatrix(int inNumRows, int inNumCols);
-	CUDAMatrix(int inNumRowsCols, std::vector<double> h_matrix);
-	CUDAMatrix(int inNumRows, int inNumCols, std::vector<double> h_matrix);
-	void init(int inNumRows, int inNumCols, std::vector<double> h_matrix);
+	CUDAMatrix(int inNumRowsCols, std::vector<double> inMatrix);
+	CUDAMatrix(int inNumRows, int inNumCols, std::vector<double> inMatrix);
+	void init(int inNumRows, int inNumCols, std::vector<double> inMatrix);
 	// DESTRUCTOR
 	~CUDAMatrix();
 	// BOOLEANS
@@ -49,5 +50,7 @@ public:
 	int getNumCols();
 	size_t getSize();
 };
+
+std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A);
 
 #endif

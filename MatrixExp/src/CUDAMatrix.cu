@@ -31,25 +31,28 @@ CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols) {
 	init(inNumRows, inNumCols, h_matrix);
 }
 // Creates an instance of a square matrix and assigns a value to it
-CUDAMatrix::CUDAMatrix(int inNumRowsCols, std::vector<double> h_matrix) {
-	init(inNumRowsCols, inNumRowsCols, h_matrix);
+CUDAMatrix::CUDAMatrix(int inNumRowsCols, std::vector<double> inMatrix) {
+	init(inNumRowsCols, inNumRowsCols, inMatrix);
 }
 // Creates an instance of an (n x m) matrix and assigns a value to it
-CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols, std::vector<double> h_matrix) {
-	init(inNumRows, inNumCols, h_matrix);
+CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols, std::vector<double> inMatrix) {
+	init(inNumRows, inNumCols, inMatrix);
 }
 // Initialiser. Resizes the matrix and sets the values to 0
-void CUDAMatrix::init(int inNumRows, int inNumCols, std::vector<double> h_matrix) {
+void CUDAMatrix::init(int inNumRows, int inNumCols, std::vector<double> inMatrix) {
 	size = sizeof(double)*inNumRows*inNumCols;
-	//cudaMalloc(&d_matrix, size);
-	//cudaMemcpy(d_matrix, &h_matrix, size, cudaMemcpyHostToDevice);
+	h_matrix = (std::vector<double>*) malloc(size);
+	memcpy(h_matrix, &inMatrix, size);
+	cudaMalloc((void**)&d_matrix, size);
+	cudaMemcpy(d_matrix, h_matrix, size, cudaMemcpyHostToDevice);
 	initialised = true;
 }
 
 // DESTRUCTOR
 
 CUDAMatrix::~CUDAMatrix() {
-	//cudaFree(d_matrix);
+	free(h_matrix);
+	cudaFree(d_matrix);
 }
 
 // BOOLEANS
@@ -61,11 +64,12 @@ bool CUDAMatrix::isInitialised() {
 // GETTERS
 
 std::vector<double> CUDAMatrix::getMatrix() {
-	std::vector<double>* h_matrix;
-	h_matrix->resize(numRows*numCols);
-	// Fetch matrix from device
-	//cudaMemcpy(h_matrix, d_matrix, size, cudaMemcpyDeviceToHost);
-	return *h_matrix;
+	if (isInitialised()) {
+		cudaMemcpy(h_matrix, d_matrix, size, cudaMemcpyDeviceToHost);
+		return *h_matrix;
+	} else {
+		throw;
+	}
 }
 
 int CUDAMatrix::getNumRows() {
@@ -83,27 +87,26 @@ size_t CUDAMatrix::getSize() {
 // OPERATOR OVERRIDES
 
 // <<
-//std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
-//	std::vector<double> h_matrix = A.getMatrix();
-//	if (A.isInitialised()) {
-//		double cell;
-//		for (int c1 = 0; c1 < A.getNumRows(); c1++) {
-//			oStream << "|";
-//			for (int c2 = 0; c2 < A.getNumCols(); c2++) {
-//				cell = h_matrix[c1*c2+c1];
-//				if (abs(cell - (int) (cell) != 0)) {
-//					// Decimal
-//					oStream << " " << std::setprecision(3) << std::fixed << cell;
-//				} else {
-//					// Integer
-//					oStream << " " << std::setprecision(0) << std::fixed << cell;
-//				}
-//			}
-//			oStream << " |" << std::endl;
-//		}
-//		return oStream;
-//	} else {
-//		// Error! Cannot print matrix before initialisation
-//		throw (102);
-//	}
-//}
+std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
+	std::vector<double> matrix(A.getMatrix());
+	if (A.isInitialised()) {
+		double cell;
+		for (int c1 = 0; c1 < A.getNumRows(); c1++) {
+			oStream << "|";
+			for (int c2 = 0; c2 < A.getNumCols(); c2++) {
+				cell = matrix[c1*c2+c1];
+				if (abs(cell - (int) (cell) != 0)) {
+					// Decimal
+					oStream << " " << std::setprecision(3) << std::fixed << cell;
+				} else {
+					// Integer
+					oStream << " " << std::setprecision(0) << std::fixed << cell;
+				}
+			}
+			oStream << " |" << std::endl;
+		}
+		return oStream;
+	} else {
+		throw;
+	}
+}
