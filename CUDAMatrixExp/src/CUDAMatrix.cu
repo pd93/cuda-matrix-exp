@@ -90,7 +90,13 @@ CUDAMatrix::~CUDAMatrix() {
 // KERNEL CALLS
 
 void CUDAMatrix::mul(CUDAMatrix A, CUDAMatrix B, CUDAMatrix R) {
-	cudaMul <<< 1, 256 >>> (A.d_matrix, B.d_matrix, R.d_matrix);
+	if (A.isInitialised() && B.isInitialised() && R.isInitialised()) {
+		dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
+		dim3 dimGrid(A.getNumCols() / dimBlock.x, A.getNumRows() / dimBlock.y);
+		cudaMul <<< dimGrid, dimBlock >>> (A.d_matrix, B.d_matrix, R.d_matrix);
+	} else {
+		throw;
+	}
 }
 
 // BOOLEANS

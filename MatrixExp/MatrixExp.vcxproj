@@ -151,14 +151,10 @@ copy "$(CudaToolkitBinDir)\cudart*.dll" "$(OutDir)"</Command>
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="src\CUDAMain.cu" />
-    <CudaCompile Include="src\CUDAMatrix.cu" />
     <CudaCompile Include="src\Main.cpp" />
     <CudaCompile Include="src\Matrix.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\CUDAMain.cuh" />
-    <ClInclude Include="src\CUDAMatrix.cuh" />
     <ClInclude Include="src\Main.hpp" />
     <ClInclude Include="src\Matrix.hpp" />
   </ItemGroup>

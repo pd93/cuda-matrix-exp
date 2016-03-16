@@ -22,6 +22,10 @@
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 
+// CONSTANTS
+
+#define BLOCK_SIZE 16;
+
 // KERNELS
 __global__ void cudaAdd(double* A, double* B, double* C);
 __global__ void cudaSub(double* A, double* B, double* C);
