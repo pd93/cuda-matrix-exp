@@ -1,0 +1,610 @@
+//
+// Cardiff University | Computer Science
+// Module:     CM3203 One Semester Project (40 Credits)
+// Title:      Parallelisation of Matrix Exponentials in C++/CUDA for Quantum Control
+// Date:       2016
+//
+// Author:     Peter Davison
+// Supervisor: Dr. Frank C Langbein
+// Moderator:  Dr. Irena Spasic
+//
+
+// Include header file
+#include "Matrix.cuh"
+
+// KERNELS
+
+__global__ void cudaAdd(double* A, double* B, double* R, int n) {
+	int row = blockIdx.y * blockDim.y + threadIdx.y;
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
+	if (row < n && col < n) {
+		R[row * n + col] = A[row * n + col] + B[row * n + col];
+	}
+	__syncthreads();
+}
+
+__global__ void cudaSub(double* A, double* B, double* R, int n) {
+	int row = blockIdx.y * blockDim.y + threadIdx.y;
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
+	if (row < n && col < n) {
+		R[row * n + col] = A[row * n + col] - B[row * n + col];
+	}
+	__syncthreads();
+}
+
+__global__ void cudaMul(double* A, double* B, double* R, int n) {
+	double sum = 0;
+	int row = blockIdx.y * blockDim.y + threadIdx.y;
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
+	if (row < n && col < n) {
+		for (int i = 0; i < n; i++) {
+			sum += A[row * n + i] * B[i * n + col];
+		}
+	}
+	R[row * n + col] = sum;
+	__syncthreads();
+}
+
+__global__ void cudaInv(double* A, double* R, int n, int i) {
+	int row = blockIdx.y * blockDim.y + threadIdx.y;
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
+	double P;
+
+	if (col < n && row < n)
+	if (col > i) {
+		P = A[col * n + i] / A[i*n + i];
+		R[col * n + row] -= R[i*n + row] * P;
+		if (row >= i) {
+			A[col*n + row] -= A[i*n + row] * P;
+		}
+	}
+	__syncthreads();
+} 
+
+__global__ void cudaDev(double* A, double* R, int h) {
+	int row = blockIdx.y * blockDim.y + threadIdx.y;
+	int col = blockIdx.x * blockDim.x + threadIdx.x;
+
+	if (col < h && row < h) {
+		if (A[col * h + col] != 0) {
+			R[col * h + row] /= A[col * h + col];
+			A[col * h + row] /= A[col * h + col];
+		}
+	}
+	__syncthreads();
+
+}
+
+// INTERNAL METHODS
+
+// Allocate memory on the host and device
+void CUDAMatrix::alloc() {
+	h_matrix = (double*) malloc(size);
+	cudaError_t result = cudaMalloc((void**) &d_matrix, size);
+	if (result != cudaSuccess) {
+		throw std::runtime_error("Failed to allocate device memory");
+	}
+}
+// Deallocate memory on the host and device
+void CUDAMatrix::dealloc() {
+	free(h_matrix);
+	cudaError_t result = cudaFree(d_matrix);
+	if (result != cudaSuccess) {
+		throw std::runtime_error("Failed to free device memory");
+	}
+}
+// Get the pade coefficients
+//int* CUDAMatrix::getPadeCoefficients(int m) {
+//	switch (m) {
+//		case 3:
+//			return new int[4] { 120, 60, 12, 1 };
+//		case 5:
+//			return new int[6] { 30240, 15120, 3360, 420, 30, 1 };
+//		case 7:
+//			return new int[8] { 17297280, 8648640, 1995840, 277200, 25200, 1512, 56, 1 };
+//		case 9:
+//			return new int[10] { 17643225600, 8821612800, 2075673600, 302702400, 30270240, 2162160, 110880, 3960, 90, 1 };
+//		case 13:
+//			return new int[14] { 64764752532480000, 32382376266240000, 7771770303897600, 1187353796428800, 129060195264000, 10559470521600, 670442572800, 33522128640, 1323241920, 40840800, 960960, 16380, 182, 1 };
+//		default:
+//			throw std::runtime_error("Invalid m value");
+//	}
+//}
+// Get the pade parameters
+//CUDAMatrix::params CUDAMatrix::getPadeParams(CUDAMatrix& A) {
+//	params p;
+//	int d4, d6, d8, d10;
+//	int eta1, eta3, eta4, eta5;
+//	std::vector<double> coef, theta;
+//	p.powers.resize(7);
+//	p.scale = 0;
+//	coef = {
+//		(1 / 100800),
+//		(1 / 10059033600),
+//		(1 / 4487938430976000),
+//		(1 / 9999999999999999999), // Substitute
+//		(1 / 9999999999999999999)  // Values
+//		//(1 / 5914384781877411840000LL), // Too long
+//		//(1 / 113250775606021113483283660800000000)
+//	};
+//	theta = {
+//		3.650024139523051e-008,
+//		5.317232856892575e-004,
+//		1.495585217958292e-002,
+//		8.536352760102745e-002,
+//		2.539398330063230e-001,
+//		5.414660951208968e-001,
+//		9.504178996162932e-001,
+//		1.473163964234804e+000,
+//		2.097847961257068e+000,
+//		2.811644121620263e+000,
+//		3.602330066265032e+000,
+//		4.458935413036850e+000,
+//		5.371920351148152e+000
+//	};
+//	p.powers[2] = CUDAMatrix::mul(A, A);
+//	p.powers[4] = CUDAMatrix::mul(p.powers[2], p.powers[2]);
+//	p.powers[6] = CUDAMatrix::mul(p.powers[2], p.powers[4]);
+//	d4 = (int) (std::pow(p.powers[4].getNorm(1), (1 / 4)));
+//	d6 = (int) (std::pow(p.powers[6].getNorm(1), (1 / 6)));
+//	eta1 = utils::max(d4, d6);
+//	if (eta1 <= theta[1] && ell(A, coef[1], 3) == 0) {
+//		p.mVal = 3;
+//		return p;
+//	}
+//	if (eta1 <= theta[2] && ell(A, coef[2], 5) == 0) {
+//		p.mVal = 5;
+//		return p;
+//	}
+//	if (A.isSmall()) {
+//		d8 = (int) ((p.powers[4] * p.powers[4]).getNorm(1));
+//		d8 = (int) (d8 ^ (1 / 8));
+//	} else {
+//		//d8 = normAm(powers[4], 2) ^ (1 / 8);
+//	}
+//	eta3 = utils::max(d6, d8);
+//	if (eta3 <= theta[3] && ell(A, coef[3], 7) == 0) {
+//		p.mVal = 7;
+//		return p;
+//	}
+//	if (eta3 <= theta[4] && ell(A, coef[4], 9) == 0) {
+//		p.mVal = 9;
+//		return p;
+//	}
+//	if (A.isSmall()) {
+//		d10 = (int) (std::pow((p.powers[4] * p.powers[6]).getNorm(1), 1.0 / 10));
+//	} else {
+//		//d10 = normAm(powers[2], 5) ^ (1 / 10);
+//	}
+//	eta4 = utils::max(d8, d10);
+//	eta5 = utils::min(eta3, eta4);
+//	p.scale = utils::max((int) (ceil(log2(eta5 / theta[5]))), 0);
+//	//p.scale += ell(pow((A / 2), p.scale), coef[5], 13);
+//	if (p.scale == INFINITY) {
+//		//[t, s] = log2(norm(A, 1) / theta.end());
+//		//s = s - (t == 0.5); //adjust s if normA / theta(end) is a power of 2.
+//	}
+//	p.mVal = 13;
+//	return p;
+//}
+
+// CONSTRUCTORS
+
+// Default constructor. Creates an uninitialsed instance of a matrix
+CUDAMatrix::CUDAMatrix() {
+	initialised = false;
+}
+// Creates an instance of a square matrix and initialises it
+CUDAMatrix::CUDAMatrix(int inNumRowsCols) {
+	init(inNumRowsCols, inNumRowsCols);
+	setMatrix('i');
+}
+// Creates an instance of an (n x m) matrix and initialises it
+CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols) {
+	init(inNumRows, inNumCols);
+	setMatrix('i');
+}
+// Creates an instance of a square matrix and assigns a value to it
+CUDAMatrix::CUDAMatrix(int inNumRowsCols, std::initializer_list<double> inMatrix) {
+	if (inMatrix.size() == inNumRowsCols*inNumRowsCols) {
+		init(inNumRowsCols, inNumRowsCols);
+		setMatrix(inMatrix);
+	} else {
+		throw std::runtime_error("Initialiser-list size does not match matrix size");
+	}
+}
+// Creates an instance of an (n x m) matrix and assigns a value to it
+CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols, std::initializer_list<double> inMatrix) {
+	if (inMatrix.size() == inNumRows*inNumCols) {
+		init(inNumRows, inNumCols);
+		setMatrix(inMatrix);
+	} else {
+		throw std::runtime_error("Initialiser-list size does not match matrix size");
+	}
+}
+// Initialiser
+void CUDAMatrix::init(int inNumRows, int inNumCols) {
+	numRows = inNumRows;
+	numCols = inNumCols;
+	numEls = inNumRows*inNumCols;
+	size = sizeof(double) *numEls;
+	alloc();
+	initialised = true;
+}
+// Destructor
+CUDAMatrix::~CUDAMatrix() {
+	dealloc();
+}
+
+// KERNEL CALLS
+
+float CUDAMatrix::add(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R) {
+	if (A.isInitialised() && B.isInitialised() && R.isInitialised()) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
+		int br = B.getNumRows();
+		int bc = B.getNumCols();
+		int rr = R.getNumRows();
+		int rc = R.getNumCols();
+		if (ar == ac && ac == br && br == bc && bc == rr && rr == rc) {
+			dim3 threadsPerBlock(ar, ac);
+			dim3 blocksPerGrid(1, 1);
+			if (ar*ac > 512) {
+				threadsPerBlock.x = 512;
+				threadsPerBlock.y = 512;
+				blocksPerGrid.x = (int) (ceil(double(ar) / double(threadsPerBlock.x)));
+				blocksPerGrid.y = (int) (ceil(double(ac) / double(threadsPerBlock.y)));
+			}
+			float time;
+			cudaEvent_t start, stop;
+			cudaEventCreate(&start);
+			cudaEventCreate(&stop);
+			cudaEventRecord(start, 0);
+
+			cudaAdd KERNEL_ARGS2(blocksPerGrid, threadsPerBlock) (A.d_matrix, B.d_matrix, R.d_matrix, A.getNumRows());
+
+			cudaEventRecord(stop, 0);
+			cudaEventSynchronize(stop);
+			cudaEventElapsedTime(&time, start, stop);
+			cudaEventDestroy(start);
+			cudaEventDestroy(stop);
+
+			R.syncHost();
+			return time;
+		} else {
+			throw std::runtime_error("Matrix sizes do not match");
+		}
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+float CUDAMatrix::sub(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R) {
+	if (A.isInitialised() && B.isInitialised() && R.isInitialised()) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
+		int br = B.getNumRows();
+		int bc = B.getNumCols();
+		int rr = R.getNumRows();
+		int rc = R.getNumCols();
+		if (ar == ac && ac == br && br == bc && bc == rr && rr == rc) {
+			dim3 threadsPerBlock(ar, ac);
+			dim3 blocksPerGrid(1, 1);
+			if (ar*ac > 512) {
+				threadsPerBlock.x = 512;
+				threadsPerBlock.y = 512;
+				blocksPerGrid.x = (int) (ceil(double(ar) / double(threadsPerBlock.x)));
+				blocksPerGrid.y = (int) (ceil(double(ac) / double(threadsPerBlock.y)));
+			}
+			float time;
+			cudaEvent_t start, stop;
+			cudaEventCreate(&start);
+			cudaEventCreate(&stop);
+			cudaEventRecord(start, 0);
+
+			cudaSub KERNEL_ARGS2(blocksPerGrid, threadsPerBlock) (A.d_matrix, B.d_matrix, R.d_matrix, A.getNumRows());
+
+			cudaEventRecord(stop, 0);
+			cudaEventSynchronize(stop);
+			cudaEventElapsedTime(&time, start, stop);
+			cudaEventDestroy(start);
+			cudaEventDestroy(stop);
+
+			R.syncHost();
+			return time;
+		} else {
+			throw std::runtime_error("Matrix sizes do not match");
+		}
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+float CUDAMatrix::mul(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R) {
+	if (A.isInitialised() && B.isInitialised() && R.isInitialised()) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
+		int br = B.getNumRows();
+		int bc = B.getNumCols();
+		int rr = R.getNumRows();
+		int rc = R.getNumCols();
+		if (ar == ac && ac == br && br == bc && bc == rr && rr == rc) {
+			dim3 threadsPerBlock(ar, ac);
+			dim3 blocksPerGrid(1, 1);
+			if (ar*ac > 512) {
+				threadsPerBlock.x = 512;
+				threadsPerBlock.y = 512;
+				blocksPerGrid.x = (int) (ceil(double(ar) / double(threadsPerBlock.x)));
+				blocksPerGrid.y = (int) (ceil(double(ac) / double(threadsPerBlock.y)));
+			}
+			float time;
+			cudaEvent_t start, stop;
+			cudaEventCreate(&start);
+			cudaEventCreate(&stop);
+			cudaEventRecord(start, 0);
+
+			cudaMul KERNEL_ARGS2(blocksPerGrid, threadsPerBlock) (A.d_matrix, B.d_matrix, R.d_matrix, A.getNumRows());
+
+			cudaEventRecord(stop, 0);
+			cudaEventSynchronize(stop);
+			cudaEventElapsedTime(&time, start, stop);
+			cudaEventDestroy(start);
+			cudaEventDestroy(stop);
+
+			R.syncHost();
+			return time;
+		} else {
+			throw std::runtime_error("Matrix sizes do not match");
+		}
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+float CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
+	if (A.isInitialised() && R.isInitialised()) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
+		int rr = R.getNumRows();
+		int rc = R.getNumCols();
+		if (ar == ac && ac == rr && rr == rc) {
+			int n = ar;
+			dim3 threadsPerBlock(ar/16, ac/16);
+			dim3 blocksPerGrid(16, 16);
+			if (ar*ac > 512) {
+				threadsPerBlock.x = 512;
+				threadsPerBlock.y = 512;
+				blocksPerGrid.x = (int) (ceil(double(n) / double(threadsPerBlock.x)));
+				blocksPerGrid.y = (int) (ceil(double(n) / double(threadsPerBlock.y)));
+			}
+			float time;
+			cudaEvent_t start, stop;
+			cudaEventCreate(&start);
+			cudaEventCreate(&stop);
+			cudaEventRecord(start, 0);
+
+			for (int i = 0; i < n; i++) {
+				cudaInv KERNEL_ARGS2(blocksPerGrid, threadsPerBlock) (A.d_matrix, R.d_matrix, n, i);
+			}
+			cudaDev KERNEL_ARGS2(blocksPerGrid, threadsPerBlock) (A.d_matrix, R.d_matrix, n);
+
+			cudaEventRecord(stop, 0);
+			cudaEventSynchronize(stop);
+			cudaEventElapsedTime(&time, start, stop);
+			cudaEventDestroy(start);
+			cudaEventDestroy(stop);
+
+			R.syncHost();
+			return time;
+		} else {
+			throw std::runtime_error("Matrix sizes do not match");
+		}
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+// BOOLEANS
+
+bool CUDAMatrix::isInitialised() {
+	return initialised;
+}
+
+// SYNCERS
+
+void CUDAMatrix::syncHost() {
+	if (isInitialised()) {
+		cudaError_t result = cudaMemcpy(h_matrix, d_matrix, size, cudaMemcpyDeviceToHost);
+		if (result != cudaSuccess) {
+			throw std::runtime_error("Failed to allocate device memory");
+		}
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+void CUDAMatrix::syncDevice() {
+	if (isInitialised()) {
+		cudaError_t result = cudaMemcpy(d_matrix, h_matrix, size, cudaMemcpyHostToDevice);
+		if (result != cudaSuccess) {
+			throw std::runtime_error("Failed to allocate device memory");
+		}
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+// SETTERS
+
+void CUDAMatrix::setCell(int row, int col, double val) {
+	if (isInitialised()) {
+		h_matrix[numCols*row + col] = val;
+		syncDevice();
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+void CUDAMatrix::setCell(int i, double val) {
+	if (isInitialised()) {
+		h_matrix[i] = val;
+		syncDevice();
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+void CUDAMatrix::setMatrix(int val) {
+	if (isInitialised()) {
+		for (int c1 = 0; c1 < getNumEls(); c1++) {
+			h_matrix[c1] = val;
+		}
+		syncDevice();
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+void CUDAMatrix::setMatrix(const char val) {
+	if (isInitialised()) {
+		if (val == 'i') {
+			int row, col;
+			for (int c1 = 0; c1 < getNumEls(); c1++) {
+				row = getCurRow(c1);
+				col = getCurCol(c1);
+				if (row == col) {
+					h_matrix[c1] = 1;
+				} else {
+					h_matrix[c1] = 0;
+				}
+			}
+		} else {
+			throw;
+		}
+		syncDevice();
+	} else {
+		throw;
+	}
+}
+
+void CUDAMatrix::setMatrix(double* inMatrix) {
+	if (isInitialised()) {
+		memcpy(&h_matrix, inMatrix, size);
+		syncDevice();
+	} else {
+		throw;
+	}
+}
+
+void CUDAMatrix::setMatrix(std::initializer_list<double> inMatrix) {
+	if (isInitialised()) {
+		if (inMatrix.size() == getNumEls()) {
+			std::copy(inMatrix.begin(), inMatrix.end(), h_matrix);
+			syncDevice();
+		} else {
+			throw;
+		}
+	} else {
+		throw;
+	}
+}
+
+// GETTERS
+
+int CUDAMatrix::getCurRow(int i) {
+	if (isInitialised()) {
+		return (int) (floor(i / numCols));
+	} else {
+		throw;
+	}
+}
+
+int CUDAMatrix::getCurCol(int i) {
+	if (isInitialised()) {
+		return (int) (i - (numCols*getCurRow(i)));
+	} else {
+		throw;
+	}
+}
+
+double CUDAMatrix::getCell(int row, int col) {
+	if (isInitialised()) {
+		return h_matrix[numCols*row + col];
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+double CUDAMatrix::getCell(int i) {
+	if (isInitialised()) {
+		return h_matrix[i];
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+double* CUDAMatrix::getMatrix() {
+	if (isInitialised()) {
+		return h_matrix;
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+int CUDAMatrix::getNumRows() {
+	if (isInitialised()) {
+		return numRows;
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+int CUDAMatrix::getNumCols() {
+	if (isInitialised()) {
+		return numCols;
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+int CUDAMatrix::getNumEls() {
+	if (isInitialised()) {
+		return numEls;
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+size_t CUDAMatrix::getSize() {
+	if (isInitialised()) {
+		return size;
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+// OPERATOR OVERRIDES
+
+// <<
+std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
+	if (A.isInitialised()) {
+		double cell;
+		for (int c1 = 0; c1 < A.getNumRows(); c1++) {
+			oStream << "|";
+			for (int c2 = 0; c2 < A.getNumCols(); c2++) {
+				cell = A.getCell(c1, c2);
+				if (abs(cell - (int) (cell) != 0)) {
+					// Decimal
+					oStream << " " << std::setprecision(3) << std::fixed << cell;
+				} else {
+					// Integer
+					oStream << " " << std::setprecision(0) << std::fixed << cell;
+				}
+			}
+			oStream << " |" << std::endl;
+		}
+		return oStream;
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
