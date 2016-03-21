@@ -53,11 +53,10 @@ int main(int argc, char **argv) {
 	std::cout << R3;
 	std::cout << std::setprecision(4) << std::fixed << time << "s" << std::endl << std::endl;
 
-	std::cout << "Create R4 = inv(A)" << std::endl;
+	std::cout << "Create R4 = inv(B)" << std::endl;
 	CUDAMatrix R4(A.getNumRows(), A.getNumCols());
-	time = CUDAMatrix::inv(A, R4);
-	std::cout << R4 << std::endl;
-	std::cout << A;
+	time = CUDAMatrix::inv(B, R4);
+	std::cout << R4;
 	std::cout << std::setprecision(4) << std::fixed << time << "s" << std::endl << std::endl;
 	
 	return 0;

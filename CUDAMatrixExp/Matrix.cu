@@ -50,27 +50,28 @@ __global__ void cudaInv(double* A, double* R, int n, int i) {
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 	double P;
 
-	if (col < n && row < n)
-	if (col > i) {
-		P = A[col * n + i] / A[i*n + i];
-		R[col * n + row] -= R[i*n + row] * P;
-		if (row >= i) {
-			A[col*n + row] -= A[i*n + row] * P;
+	if (col < n && row < n) {
+		if (col > i) {
+			P = A[col * n + i] / A[i*n + i];
+			R[col * n + row] -= R[i*n + row] * P;
+			if (row >= i) {
+				A[col*n + row] -= A[i*n + row] * P;
+			}
 		}
 	}
 	__syncthreads();
 } 
 
-__global__ void cudaDev(double* A, double* R, int h) {
+__global__ void cudaDev(double* A, double* R, int n) {
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if (col < h && row < h) {
-		if (A[col * h + col] != 0) {
-			R[col * h + row] /= A[col * h + col];
-			A[col * h + row] /= A[col * h + col];
+	if (col < n && row < n) {
+		if (A[col * n + col] != 0) {
+			R[col * n + row] /= A[col * n + col];
+			A[col * n + row] /= A[col * n + col];
 		}
-	}
+	} 
 	__syncthreads();
 
 }
@@ -94,7 +95,7 @@ void CUDAMatrix::dealloc() {
 	}
 }
 // Get the pade coefficients
-//int* CUDAMatrix::getPadeCoefficients(int m) {
+int* CUDAMatrix::getPadeCoefficients(int m) {
 //	switch (m) {
 //		case 3:
 //			return new int[4] { 120, 60, 12, 1 };
@@ -109,10 +110,11 @@ void CUDAMatrix::dealloc() {
 //		default:
 //			throw std::runtime_error("Invalid m value");
 //	}
-//}
+	throw;
+}
 // Get the pade parameters
-//CUDAMatrix::params CUDAMatrix::getPadeParams(CUDAMatrix& A) {
-//	params p;
+CUDAMatrix::params CUDAMatrix::getPadeParams(CUDAMatrix& A) {
+	params p;
 //	int d4, d6, d8, d10;
 //	int eta1, eta3, eta4, eta5;
 //	std::vector<double> coef, theta;
@@ -185,8 +187,8 @@ void CUDAMatrix::dealloc() {
 //		//s = s - (t == 0.5); //adjust s if normA / theta(end) is a power of 2.
 //	}
 //	p.mVal = 13;
-//	return p;
-//}
+	return p;
+}
 
 // CONSTRUCTORS
 
@@ -369,8 +371,8 @@ float CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
 		int rc = R.getNumCols();
 		if (ar == ac && ac == rr && rr == rc) {
 			int n = ar;
-			dim3 threadsPerBlock(ar/16, ac/16);
-			dim3 blocksPerGrid(16, 16);
+			dim3 threadsPerBlock(ar, ac);
+			dim3 blocksPerGrid(1, 1);
 			if (ar*ac > 512) {
 				threadsPerBlock.x = 512;
 				threadsPerBlock.y = 512;
@@ -479,11 +481,11 @@ void CUDAMatrix::setMatrix(const char val) {
 				}
 			}
 		} else {
-			throw;
+			throw std::runtime_error("Parameter is undefined");
 		}
 		syncDevice();
 	} else {
-		throw;
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
 
@@ -492,7 +494,7 @@ void CUDAMatrix::setMatrix(double* inMatrix) {
 		memcpy(&h_matrix, inMatrix, size);
 		syncDevice();
 	} else {
-		throw;
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
 
@@ -502,10 +504,10 @@ void CUDAMatrix::setMatrix(std::initializer_list<double> inMatrix) {
 			std::copy(inMatrix.begin(), inMatrix.end(), h_matrix);
 			syncDevice();
 		} else {
-			throw;
+			throw std::runtime_error("Initialiser-list size does not match matrix size");
 		}
 	} else {
-		throw;
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
 
@@ -515,7 +517,7 @@ int CUDAMatrix::getCurRow(int i) {
 	if (isInitialised()) {
 		return (int) (floor(i / numCols));
 	} else {
-		throw;
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
 
@@ -523,7 +525,7 @@ int CUDAMatrix::getCurCol(int i) {
 	if (isInitialised()) {
 		return (int) (i - (numCols*getCurRow(i)));
 	} else {
-		throw;
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
 

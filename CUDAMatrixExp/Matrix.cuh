@@ -28,7 +28,7 @@ __global__ void cudaAdd(double* A, double* B, double* R, int n);
 __global__ void cudaSub(double* A, double* B, double* R, int n);
 __global__ void cudaMul(double* A, double* B, double* R, int n);
 __global__ void cudaInv(double* A, double* R, int n, int i);
-__global__ void cudaDev(double* A, double* R, int h);
+__global__ void cudaDev(double* A, double* R, int n);
 
 class CUDAMatrix {
 public:
