@@ -88,6 +88,12 @@ public:
 	size_t getSize();
 };
 
+// OPERATOR OVERRIDES
 std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A);
+
+// UTILS
+namespace Utils {
+	int getNumDigits(double x);
+}
 
 #endif

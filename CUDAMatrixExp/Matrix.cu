@@ -531,7 +531,7 @@ int CUDAMatrix::getCurCol(int i) {
 
 double CUDAMatrix::getCell(int row, int col) {
 	if (isInitialised()) {
-		return h_matrix[numCols*row + col];
+		return h_matrix[row*numCols + col];
 	} else {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
@@ -591,22 +591,55 @@ size_t CUDAMatrix::getSize() {
 std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
 	if (A.isInitialised()) {
 		double cell;
-		for (int c1 = 0; c1 < A.getNumRows(); c1++) {
-			oStream << "|";
-			for (int c2 = 0; c2 < A.getNumCols(); c2++) {
-				cell = A.getCell(c1, c2);
-				if (abs(cell - (int) (cell) != 0)) {
-					// Decimal
-					oStream << " " << std::setprecision(3) << std::fixed << cell;
-				} else {
-					// Integer
-					oStream << " " << std::setprecision(0) << std::fixed << cell;
-				}
+		int c1, c2, length, maxLength = 0, precision = 0;
+		for (c1 = 0; c1 < A.getNumEls(); c1++) {
+			// Get precision
+			cell = A.getCell(c1);
+			if (cell - (int) cell > 0.0) {
+				precision = 3;
 			}
-			oStream << " |" << std::endl;
+			// Get maximum number length
+			length = Utils::getNumDigits(cell);
+			if (length > maxLength) {
+				maxLength = length;
+			}
+		}
+		for (c1 = 0; c1 < A.getNumEls(); c1++) {
+			cell = A.getCell(c1);
+			// Remove negative zeros
+			if (cell == 0) {
+				cell = 0;
+			}
+			oStream << "| ";
+			// Add whitespace if shorter than maxLength
+			length = Utils::getNumDigits(cell);
+			for (c2 = 0; c2 < (maxLength - length); c2++) {
+				oStream << " ";
+			}
+			// Output number
+			oStream << std::setprecision(precision) << std::fixed << cell << " ";
+			// Output new line if row end reached
+			if (A.getCurRow(c1 + 1) > A.getCurRow(c1)) {
+				oStream << "|" << std::endl;
+			}
 		}
 		return oStream;
 	} else {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
+}
+
+// UTILS
+
+int Utils::getNumDigits(double x) {
+	int length;
+	if (x > 1 || x < -1) {
+		length = (int) (floor(log10(abs(x))) + 1);
+	} else {
+		length = 1;
+	}
+	if (x < 0) {
+		length++;
+	}
+	return length;
 }
