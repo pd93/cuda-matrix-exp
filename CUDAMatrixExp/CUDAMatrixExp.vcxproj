@@ -126,10 +126,12 @@
   <ItemGroup>
     <ClInclude Include="cuda_intellisense.h" />
     <ClInclude Include="Main.h" />
-    <ClInclude Include="Matrix.cuh" />
+    <ClInclude Include="CUDAMatrix.cuh" />
+    <ClInclude Include="CUDATimer.cuh" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="Matrix.cu" />
+    <CudaCompile Include="CUDAMatrix.cu" />
+    <CudaCompile Include="CUDATimer.cu" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

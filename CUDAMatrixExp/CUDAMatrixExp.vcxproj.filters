@@ -23,12 +23,14 @@
     <ClInclude Include="Main.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Matrix.cuh" />
     <ClInclude Include="cuda_intellisense.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CUDATimer.cuh" />
+    <ClInclude Include="CUDAMatrix.cuh" />
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="Matrix.cu" />
+    <CudaCompile Include="CUDATimer.cu" />
+    <CudaCompile Include="CUDAMatrix.cu" />
   </ItemGroup>
 </Project>

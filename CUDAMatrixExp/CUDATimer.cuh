@@ -10,23 +10,23 @@
 //
 
 // Precompiler include check
-#ifndef cudamatrix_h
-#define cudamatrix_h
-// Include CUDA Stuff
+#ifndef timer_h
+#define timer_h
+// Include CUDA stuff
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include "cuda_intellisense.h"
 
-class Timer {
+class CUDATimer {
 private:
 	float time;
-	cudaEvent_t start, stop;
+	cudaEvent_t t1, t2;
 public:
-	Timer();
-	~Timer();
 	void start();
 	void stop();
-	void print();
+	void clear();
+	float getTime();
 };
 
 #endif
