@@ -72,65 +72,32 @@ __global__ void cudaMulScalar(double* A, double scalar, double* R, int n) {
 	__syncthreads();
 }
 
-__global__ void cudaCholeskyInv(double* R, int k, int n, int stride) {
-	unsigned int j;
-	int i = blockIdx.x + (k + 1);
-	int offset = i;
-	int jstart = threadIdx.x + offset;
-	int jstep = stride;
-	int jtop = n - 1;
-	int jbottom = i;
-	for (j = jstart; (j >= jbottom) && (j <= jtop); j += jstep) {
-		R[i * n + j] -= R[k * n + i] * R[k * n + j];
-	}
-}
-
-__global__ void cudaCholeskyDiv(double* R, int k, int n, int stride) {
-	int tx = blockIdx.x * blockDim.x + threadIdx.x;
-	unsigned int j;
-	if (tx == 0) {
-		R[k * n + k] = sqrt(R[k * n + k]);
-	}
-	int offset = (k + 1);
-	int jstart = threadIdx.x + offset;
-	int jstep = stride;
-	int jtop = n - 1;
-	int jbottom = (k + 1);
-	if (blockIdx.x == 0) {
-		for (j = jstart; (j >= jbottom) && (j <= jtop); j += jstep) {
-			R[k * n + j] /= R[k * n + k];
-		}
-	}
-}
-
-__global__ void cudaGaussJordanInv(double* A, double* R, int n, int i) {
+__global__ void cudaLUDecomp(double* A, double* Lower, double* Upper, int n) {
+	int i;
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
-	double P;
-
-	if (col < n && row < n) {
-		if (col > i) {
-			if (row > i) {
-				P = A[col * n + i] / A[i*n + i];
-				R[col * n + row] -= R[i*n + row] * P;
-				A[col*n + row] -= A[i*n + row] * P;
+	if (row < n && col < n) {
+		// Calculate Lower
+		if (row < col)
+			Lower[row * n + col] = 0;
+		else {
+			Lower[row * n + col] = A[row * n + col];
+			for (i = 0; i < row; i++) {
+				Lower[row * n + col] = Lower[row * n + col] - Lower[row * n + col] * Upper[row * n + col];
 			}
-			__syncthreads();
+		}
+		// Calculate Upper
+		if (row < col)
+			Upper[row * n + col] = 0;
+		else if (row == col)
+			Upper[row * n + col] = 1;
+		else {
+			Upper[row * n + col] = A[row * n + col] / Lower[row * n + col];
+			for (i = 0; i < row; i++) {
+				Upper[row * n + col] = Upper[row * n + col] - ((Lower[row * n + i] * Upper[i * n + row]) / Lower[row * n + row]);
+			}
 		}
 	}
-} 
-
-__global__ void cudaGuassJordanDev(double* A, double* R, int n) {
-	int row = blockIdx.y * blockDim.y + threadIdx.y;
-	int col = blockIdx.x * blockDim.x + threadIdx.x;
-
-	if (col < n && row < n) {
-		if (A[col * n + col] != 0) {
-			R[col * n + row] /= A[col * n + col];
-			A[col * n + row] /= A[col * n + col];
-		}
-	} 
-	__syncthreads();
 }
 
 // MEMORY HANDLERS
@@ -548,64 +515,6 @@ CUDATimer CUDAMatrix::mul(CUDAMatrix& A, double scalar, CUDAMatrix& R) {
 	}
 }
 
-//CUDATimer CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
-//	if (A.isInitialised() && R.isInitialised()) {
-//		int ar = A.getNumRows();
-//		int ac = A.getNumCols();
-//		int rr = R.getNumRows();
-//		int rc = R.getNumCols();
-//		if (ar == ac && ac == rr && rr == rc) {
-//			A.syncDevice();
-//
-//			CUDATimer t;
-//			int c1, numBlocks;
-//			int n = ar;
-//			int threadsPerBlock = 256;
-//			int stride = 256;
-//			for (c1 = 0; c1 < n*n; c1++) {
-//				R.setCell(c1, A.getCell(c1));
-//			}
-//			R.syncDevice();
-//			
-//			t.start();
-//			for (c1 = 0; c1 < n; c1++) {
-//				numBlocks = (n - 1) - (c1 + 1) + 1;
-//				if (numBlocks <= 0) {
-//					numBlocks = 1;
-//				}
-//				dim3 threadBlock(threadsPerBlock, 1, 1);
-//				dim3 grid(numBlocks, 1);
-//				cudaCholeskyDiv KERNEL_ARGS2(grid, threadBlock) (R.d_matrix, c1, n, stride);
-//				cudaCholeskyInv KERNEL_ARGS2(grid, threadBlock) (R.d_matrix, c1, n, stride);
-//
-//				cudaThreadSynchronize();
-//			}
-//			cudaThreadSynchronize();
-//
-//			R.syncHost();
-//			int i, j;
-//			for (i = 0; i < n; i++) {
-//				for (j = 0; j < i; j++) {
-//					R.h_matrix[i * n + j] = 0.0;
-//				}
-//			}
-//			t.stop();
-//
-//			R.syncDevice();
-//
-//			//for (int i = 0; i < n; i++) {
-//			//	cudaGaussJordanInv KERNEL_ARGS2(blocksPerGrid, threadsPerBlock) (A.d_matrix, R.d_matrix, n, i);
-//			//}
-//			//cudaGaussJordanDev KERNEL_ARGS2(blocksPerGrid, threadsPerBlock) (A.d_matrix, R.d_matrix, n);
-//			return t;
-//		} else {
-//			throw std::runtime_error("Matrix sizes do not match");
-//		}
-//	} else {
-//		throw std::runtime_error("Cannot perform matrix operations before initialisation");
-//	}
-//}
-
 CUDATimer CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
 	if (A.isInitialised() && R.isInitialised()) {
 		int ar = A.getNumRows();
@@ -613,67 +522,146 @@ CUDATimer CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
 		int rr = R.getNumRows();
 		int rc = R.getNumCols();
 		if (ar == ac && ac == rr && rr == rc) {
+			A.syncDevice();
+
+			cudaParams cp = getCUDAParams(ar, ac);
 			CUDATimer t;
+			CUDAMatrix L = CUDAMatrix(ar, ac);
+			CUDAMatrix U = CUDAMatrix(ar, ac);
+			CUDAMatrix Z = CUDAMatrix(ar, ac);
+			CUDAMatrix I = CUDAMatrix(ar, ac);
+			I.setIdentity();
+
 			t.start();
-			// Init
-			CUDAMatrix P(ar, ac * 2);
-			int c1, c2, c3;
-			int n = ac;
-			double cell, tmp;
-			// Copy A into P (Left side)
-			for (c1 = 0; c1 < n; c1++) {
-				for (c2 = 0; c2 < n; c2++) {
-					P.setCell(c1, c2, A.getCell(c1, c2));
-					if (c1 == c2) {
-						P.setCell(c1, c2 + n, 1);
+			//cudaLUDecomp KERNEL_ARGS2(cp.bpg, cp.tpb) (A.d_matrix, Lower.d_matrix, Upper.d_matrix, n);
+
+			int n = ar;
+			int i, j, k;
+			// LU Decomposition
+			for (i = 0; i < n; i++) {
+				for (j = 0; j < n; j++) {
+					if (j < i) {
+						U.setCell(i, j, 0);
+					} else {
+						U.setCell(i, j, A.getCell(i, j));
+						for (k = 0; k < i; k++) {
+							U.setCell(i, j, (U.getCell(i, j) - U.getCell(k, j) * L.getCell(i, k)));
+						}
 					}
 				}
-			}
-			// Pivot P
-			for (c1 = n - 1; c1 > 0; c1--) {
-				if (P.getCell(c1 - 1, 0) < P.getCell(c1, 0)) {
-					for (c2 = 0; c2 < n * 2; c2++) {
-						tmp = P.getCell(c1, c2);
-						P.setCell(c1, c2, P.getCell(c1 - 1, c2));
-						P.setCell(c1 - 1, c2, tmp);
-					}
-				}
-			}
-			// Reduce to diagonal matrix
-			for (c1 = 0; c1 < n * 2; c1++) {
-				for (c2 = 0; c2 < n; c2++) {
-					if (c2 != c1 && c1 < n) {
-						tmp = P.getCell(c2, c1) / P.getCell(c1, c1);
-						for (c3 = 0; c3 < n * 2; c3++) {
-							cell = P.getCell(c2, c3) - (P.getCell(c1, c3) * tmp);
-							P.setCell(c2, c3, cell);
+				for (j = 0; j < n; j++) {
+					if (j < i) {
+						L.setCell(j, i, 0);
+					} else if (j == i) {
+						L.setCell(j, i, 1);
+					} else {
+						L.setCell(j, i, (A.getCell(j, i) / U.getCell(i, i)));
+						for (k = 0; k < i; k++) {
+							L.setCell(j, i, (L.getCell(j, i) - ((U.getCell(k, i) * L.getCell(j, k)) / U.getCell(i, i))));
 						}
 					}
 				}
 			}
-			// Reduce to unit matrix
-			for (c1 = 0; c1 < n; c1++) {
-				tmp = P.getCell(c1, c1);
-				for (c2 = 0; c2 < n * 2; c2++) {
-					P.setCell(c1, c2, P.getCell(c1, c2) / tmp);
+			for (i = 0; i < n; i++) {
+				// Find Z (L^-1) with Forward Substitution
+				for (j = 0; j < n; j++) {
+					Z.setCell(j, i, I.getCell(j, i));
+					for (k = 0; k < n; k++) {
+						if (k != j) {
+							Z.setCell(j, i, (Z.getCell(j, i) - (L.getCell(j, k) * Z.getCell(k, i))));
+						}
+					}
+				}
+				// Find X (A^-1) with Backward Substitution
+				for (j = n - 1; j >= 0; j--) {
+					R.setCell(j, i, Z.getCell(j, i));
+					for (k = 0; k < n; k++) {
+						if (k != j) {
+							R.setCell(j, i, (R.getCell(j, i) - (U.getCell(j, k) * R.getCell(k, i))));
+						}
+					}
+					R.setCell(j, i, R.getCell(j, i) / U.getCell(j, j));
 				}
 			}
-			// Copy P (Right side) to R
-			for (c1 = 0; c1 < n; c1++) {
-				for (c2 = 0; c2 < n; c2++) {
-					R.setCell(c1, c2, P.getCell(c1, c2 + n));
-				}
-			}
+
 			t.stop();
-			R.syncDevice();
 			return t;
 		} else {
-			throw std::runtime_error("Cannot find the inverse of this matrix");
+			throw std::runtime_error("Matrix sizes do not match");
 		}
 	} else {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
+
+//CUDATimer CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
+//	if (A.isInitialised() && R.isInitialised()) {
+//		int ar = A.getNumRows();
+//		int ac = A.getNumCols();
+//		int rr = R.getNumRows();
+//		int rc = R.getNumCols();
+//		if (ar == ac && ac == rr && rr == rc) {
+//			CUDATimer t;
+//			t.start();
+//			// Init
+//			CUDAMatrix P(ar, ac * 2);
+//			int c1, c2, c3;
+//			int n = ac;
+//			double cell, tmp;
+//			// Copy A into P (Left side)
+//			for (c1 = 0; c1 < n; c1++) {
+//				for (c2 = 0; c2 < n; c2++) {
+//					P.setCell(c1, c2, A.getCell(c1, c2));
+//					if (c1 == c2) {
+//						P.setCell(c1, c2 + n, 1);
+//					}
+//				}
+//			}
+//			// Pivot P
+//			for (c1 = n - 1; c1 > 0; c1--) {
+//				if (P.getCell(c1 - 1, 0) < P.getCell(c1, 0)) {
+//					for (c2 = 0; c2 < n * 2; c2++) {
+//						tmp = P.getCell(c1, c2);
+//						P.setCell(c1, c2, P.getCell(c1 - 1, c2));
+//						P.setCell(c1 - 1, c2, tmp);
+//					}
+//				}
+//			}
+//			// Reduce to diagonal matrix
+//			for (c1 = 0; c1 < n * 2; c1++) {
+//				for (c2 = 0; c2 < n; c2++) {
+//					if (c2 != c1 && c1 < n) {
+//						tmp = P.getCell(c2, c1) / P.getCell(c1, c1);
+//						for (c3 = 0; c3 < n * 2; c3++) {
+//							cell = P.getCell(c2, c3) - (P.getCell(c1, c3) * tmp);
+//							P.setCell(c2, c3, cell);
+//						}
+//					}
+//				}
+//			}
+//			// Reduce to unit matrix
+//			for (c1 = 0; c1 < n; c1++) {
+//				tmp = P.getCell(c1, c1);
+//				for (c2 = 0; c2 < n * 2; c2++) {
+//					P.setCell(c1, c2, P.getCell(c1, c2) / tmp);
+//				}
+//			}
+//			// Copy P (Right side) to R
+//			for (c1 = 0; c1 < n; c1++) {
+//				for (c2 = 0; c2 < n; c2++) {
+//					R.setCell(c1, c2, P.getCell(c1, c2 + n));
+//				}
+//			}
+//			t.stop();
+//			R.syncDevice();
+//			return t;
+//		} else {
+//			throw std::runtime_error("Cannot find the inverse of this matrix");
+//		}
+//	} else {
+//		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+//	}
+//}
 
 CUDATimer CUDAMatrix::tra(CUDAMatrix& A, CUDAMatrix& R) {
 	if (A.isInitialised() && R.isInitialised()) {
@@ -748,19 +736,15 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 				std::vector<CUDAMatrix*> pow = p.pow;
 				// Get Pade coefficients
 				std::vector<double> c = getPadeCoefficients(m);
-				// OUTPUT
-				std::cout << "s = " << s << std::endl;
-				std::cout << "m = " << m << std::endl;
 				// Start timer
 				t.start();
 				// Scaling
-				//if (s != 0) {
-				//	A = A / (2.^s);
-				//	powers = cellfun(@rdivide, powers, ...
-				//	num2cell(2. ^ (s * (1:length(powers)))), 'UniformOutput', false);
-				//}
+				if (s != 0) {
+					//A = A / (2.^s);
+					//powers = cellfun(@rdivide, powers, ...
+					//num2cell(2. ^ (s * (1:length(powers)))), 'UniformOutput', false);
+				}
 				// Approximation
-
 				if (m == 3 || m == 5 || m == 7 || m == 9) {
 					for (c1 = (int) (pow.size()) + 2; c1 < m - 1; c1 += 2) { //for (k = strt:2:m-1)
 						cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[c1 - 2]->d_matrix, pow[2]->d_matrix, pow[c1]->d_matrix, n);
@@ -776,46 +760,48 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (U.d_matrix, A.d_matrix, U.d_matrix, n);
 				} else if (m == 13) {
 					// This is the equivellent of .. 
-					// U = A * (p[6] * (c[13] * p[6] + c[11] * p[4] + c[9] * p[2]) + c[7] * p[6] + c[5] * p[4] + c[3] * p[2] + c[1] * I);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, c[13], T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[4]->d_matrix, c[11], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[2]->d_matrix, c[9], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, pow[6]->d_matrix, T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, c[7], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[4]->d_matrix, c[5], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[2]->d_matrix, c[3], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (I.d_matrix, c[1], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (A.d_matrix, T.d_matrix, U.d_matrix, n);
+					// U = A * (p[6] * (c[13] * p[6] + c[11] * p[4] + c[9] * p[2]) + c[7] * p[6] + c[5] * p[4] + c[3] * p[2] + c[1] * I);		RUN IN STREAM 1
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, c[13], T.d_matrix, n);		// p[6] * c[13] -> T			Needs new TMP var
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[4]->d_matrix, c[11], TMP.d_matrix, n);		// p[4] * c[11] -> TMP			(Cannot be used in multiple streams)
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[2]->d_matrix, c[9], TMP.d_matrix, n);		// p[2] * c[9]  -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, T.d_matrix, T.d_matrix, n);			// p[6] * T     -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, c[7], TMP.d_matrix, n);		// p[6] * c[7]  -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[4]->d_matrix, c[5], TMP.d_matrix, n);		// p[4] * c[5]  -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[2]->d_matrix, c[3], TMP.d_matrix, n);		// p[2] * c[3]  -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (I.d_matrix, c[1], TMP.d_matrix, n);				// I * c[1]     -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (A.d_matrix, T.d_matrix, U.d_matrix, n);				// A * T        -> U
 					// This is the equivellent of ..
-					//V = p[6] * (c[12] * p[6] + c[10] * p[4] + c[8] * p[2]) + c[6] * p[6] + c[4] * p[4] + c[2] * p[2] + c[0] * I;
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, c[12], T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[4]->d_matrix, c[10], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[2]->d_matrix, c[8], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, pow[6]->d_matrix, T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, c[6], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[4]->d_matrix, c[4], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[2]->d_matrix, c[2], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
-					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (I.d_matrix, c[0], TMP.d_matrix, n);
-					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, V.d_matrix, n);
+					//V = p[6] * (c[12] * p[6] + c[10] * p[4] + c[8] * p[2]) + c[6] * p[6] + c[4] * p[4] + c[2] * p[2] + c[0] * I;				RUN IN STREAM 2
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, c[12], T.d_matrix, n);		// p[6] * c[12] -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[4]->d_matrix, c[10], TMP.d_matrix, n);		// p[4] * c[10] -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[2]->d_matrix, c[8], TMP.d_matrix, n);		// p[2] * c[8]  -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, T.d_matrix, T.d_matrix, n);			// p[6]     -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, c[6], TMP.d_matrix, n);		// p[6] * c[6]  -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[4]->d_matrix, c[4], TMP.d_matrix, n);		// p[4] * c[4]  -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[2]->d_matrix, c[2], TMP.d_matrix, n);		// p[2] * c[2]  -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (I.d_matrix, c[0], TMP.d_matrix, n);				// I * c[0]     -> TMP
+					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, V.d_matrix, n);				// T + TMP      -> V
 					// TESTING
+					std::cout << "s = " << s << std::endl;
+					std::cout << "m = " << m << std::endl;
 					A.syncHost();
 					U.syncHost();
 					V.syncHost();
 					I.syncHost();
 					T.syncHost();
 					TMP.syncHost();
-					std::cout << "A" << A << "U" << U << "V" << V << "I" << I << "T" << T << "TMP" << TMP;
+					std::cout << "A" << A << "U" << U << "V" << V;
 					/////////
 				}
 				// This is the equivellent of ..
@@ -824,20 +810,25 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 				cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (U.d_matrix, 2, TMP.d_matrix, n);
 				//cudaInv KERNEL_ARGS2(cp.bpg, cp.tpb) (TMP.d_matrix, TMP.d_matrix, n); // TEMP CODE BELOW
 				TMP.syncHost();
+				std::cout << TMP;
 				CUDAMatrix::inv(TMP, TMP);
+				std::cout << TMP;
 				TMP.syncDevice();
 				//
 				cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
 				cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, I.d_matrix, R.d_matrix, n);
+
+
+
 				//if (recomputeDiags) {
-				//	*R = recompute_block_diag(A, *R, blockformat);
+				//	R = recompute_block_diag(A, R, blockformat);
 				//}
 				//// Squaring phase.
 				//for (int k = 0; k < s; k++) {
-				//	*R = *R**R;
+				//	R = R*R;
 				//	if (recomputeDiags) {
 				//		A = 2 * A;
-				//		*R = recompute_block_diag(A, *R, blockformat);
+				//		R = recompute_block_diag(A, R, blockformat);
 				//	}
 				//}
 				t.stop();
@@ -926,7 +917,7 @@ bool CUDAMatrix::isSmall() {
 
 void CUDAMatrix::setCell(int row, int col, double val) {
 	if (isInitialised()) {
-		h_matrix[numCols*row + col] = val;
+		h_matrix[numCols * row + col] = val;
 	} else {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
@@ -941,6 +932,16 @@ void CUDAMatrix::setCell(int i, double val) {
 }
 
 void CUDAMatrix::setMatrix(int val) {
+	if (isInitialised()) {
+		for (int c1 = 0; c1 < getNumEls(); c1++) {
+			h_matrix[c1] = (double) (val);
+		}
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
+void CUDAMatrix::setMatrix(double val) {
 	if (isInitialised()) {
 		for (int c1 = 0; c1 < getNumEls(); c1++) {
 			h_matrix[c1] = val;
@@ -990,7 +991,7 @@ void CUDAMatrix::setIdentity() {
 void CUDAMatrix::setRandomDouble(double min, double max) {
 	if (isInitialised()) {
 		double r;
-		std::default_random_engine rng(time(0));
+		std::default_random_engine rng((unsigned int) (time(0)));
 		std::uniform_real_distribution<double> gen(min, max);
 		for (int c1 = 0; c1 < numEls; c1++) {
 			r = gen(rng);
@@ -1004,7 +1005,7 @@ void CUDAMatrix::setRandomDouble(double min, double max) {
 void CUDAMatrix::setRandomInt(int min, int max) {
 	if (isInitialised()) {
 		int r;
-		std::default_random_engine rng(time(0));
+		std::default_random_engine rng((unsigned int) (time(0)));
 		std::uniform_int_distribution<int> gen(min, max);
 		for (int c1 = 0; c1 < numEls; c1++) {
 			r = gen(rng);
@@ -1185,7 +1186,7 @@ std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
 		for (c1 = 0; c1 < A.getNumEls(); c1++) {
 			// Get precision
 			cell = A.getCell(c1);
-			if (cell - (int) cell > 0.0) {
+			if ((cell - (int) (cell)) != 0.0) {
 				precision = 3;
 			}
 			// Get maximum number length

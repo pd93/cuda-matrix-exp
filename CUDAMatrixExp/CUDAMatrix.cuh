@@ -32,10 +32,6 @@ __global__ void cudaSub(double* A, double* B, double* R, int n);
 __global__ void cudaSubScalar(double* A, double scalar, double* R, int n);
 __global__ void cudaMul(double* A, double* B, double* R, int n);
 __global__ void cudaMulScalar(double* A, double scalar, double* R, int n);
-__global__ void cudaCholeskyInv(double* R, int k, int n, int stride);
-__global__ void cudaCholeskyDev(double* R, int k, int n, int stride);
-__global__ void cudaGuassJordanInv(double* A, double* R, int n, int i);
-__global__ void cudaGuassJordanDev(double* A, double* R, int n);
 
 class CUDAMatrix {
 private:
@@ -84,7 +80,7 @@ public:
 	static CUDATimer mul(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R);
 	static CUDATimer mul(CUDAMatrix& A, double scalar, CUDAMatrix& R);
 	static CUDATimer tra(CUDAMatrix& A, CUDAMatrix& R);
-	static CUDATimer inv(CUDAMatrix& A, CUDAMatrix& R);			// REWRITE FOR CUDA
+	static CUDATimer inv(CUDAMatrix& A, CUDAMatrix& R);			// REWRITE FOR CUDA    // Special case for scalar matrices (1/diags)
 	static CUDATimer exp(CUDAMatrix& A, CUDAMatrix& R);
 	// BOOLEANS
 	bool isInitialised();
@@ -97,6 +93,7 @@ public:
 	void setCell(int row, int col, double val);
 	void setCell(int i, double val);
 	void setMatrix(int val);
+	void setMatrix(double val);
 	void setMatrix(double* inMatrix);
 	void setMatrix(std::initializer_list<double> inMatrix);
 	void setIdentity();

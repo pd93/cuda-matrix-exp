@@ -37,11 +37,6 @@ int main(int argc, char **argv) {
 		//});
 		//std::cout << B << std::endl;
 
-		std::cout << "Create A";
-		CUDAMatrix A(3);
-		A.setIdentity();
-		std::cout << A;
-
 		//std::cout << "Create R1 = add(A, B) " << std::endl;
 		//CUDAMatrix R1 = CUDAMatrix(A.getNumRows(), A.getNumCols());
 		//t = CUDAMatrix::add(A, B, R1);
@@ -62,10 +57,23 @@ int main(int argc, char **argv) {
 		//CUDAMatrix::inv(B, R4);
 		//std::cout << R4 << std::endl << std::setprecision(5) << std::fixed << t.getTime() << "s" << std::endl << std::endl;
 
-		std::cout << "Create R5 = exp(A) " << std::endl;
-		CUDAMatrix R5 = CUDAMatrix(A.getNumRows(), A.getNumCols());
-		t = CUDAMatrix::exp(A, R5);
-		std::cout << R5 << std::endl << std::setprecision(5) << std::fixed << t.getTime() << "s" << std::endl << std::endl;
+		// MATRIX INVERSE TESTS
+		//CUDAMatrix A(3, {
+		//	25, 5, 1,
+		//	64, 8, 1,
+		//	144, 12, 1
+		//});
+		//CUDAMatrix InvA(3);
+		//t = CUDAMatrix::inv(A, InvA);
+		//std::cout << "A" << A << "Inv(A)" << InvA << std::setprecision(5) << std::fixed << t.getTime() << "s";
+
+		// MATRIX EXPONENTIAL TESTS
+
+		CUDAMatrix A(3);
+		A.setIdentity();
+		CUDAMatrix eA = CUDAMatrix(A.getNumRows(), A.getNumCols());
+		t = CUDAMatrix::exp(A, eA);
+		std::cout << "e^A" << eA << std::setprecision(5) << std::fixed << t.getTime()/1000 << "s";
 
 	} catch (std::exception e) {
 		std::cout << std::endl << e.what() << std::endl;
