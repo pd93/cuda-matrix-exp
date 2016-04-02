@@ -72,32 +72,13 @@ __global__ void cudaMulScalar(double* A, double scalar, double* R, int n) {
 	__syncthreads();
 }
 
-__global__ void cudaLUDecomp(double* A, double* Lower, double* Upper, int n) {
-	int i;
+__global__ void cudaAbs(double* A, double* R, int n) {
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 	if (row < n && col < n) {
-		// Calculate Lower
-		if (row < col)
-			Lower[row * n + col] = 0;
-		else {
-			Lower[row * n + col] = A[row * n + col];
-			for (i = 0; i < row; i++) {
-				Lower[row * n + col] = Lower[row * n + col] - Lower[row * n + col] * Upper[row * n + col];
-			}
-		}
-		// Calculate Upper
-		if (row < col)
-			Upper[row * n + col] = 0;
-		else if (row == col)
-			Upper[row * n + col] = 1;
-		else {
-			Upper[row * n + col] = A[row * n + col] / Lower[row * n + col];
-			for (i = 0; i < row; i++) {
-				Upper[row * n + col] = Upper[row * n + col] - ((Lower[row * n + i] * Upper[i * n + row]) / Lower[row * n + row]);
-			}
-		}
+		R[row * n + col] = abs(A[row * n + col]);
 	}
+	__syncthreads();
 }
 
 // MEMORY HANDLERS
@@ -121,7 +102,6 @@ void CUDAMatrix::dealloc() {
 
 // CUDA STUFF
 
-// Sync host matrix with device matrix
 void CUDAMatrix::syncHost() {
 	if (isInitialised()) {
 		cudaError_t result = cudaMemcpy(h_matrix, d_matrix, size, cudaMemcpyDeviceToHost);
@@ -132,7 +112,7 @@ void CUDAMatrix::syncHost() {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
-// Sync device matrix with host matrix
+
 void CUDAMatrix::syncDevice() {
 	if (isInitialised()) {
 		cudaError_t result = cudaMemcpy(d_matrix, h_matrix, size, cudaMemcpyHostToDevice);
@@ -143,7 +123,7 @@ void CUDAMatrix::syncDevice() {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
-// Get CUDA params
+
 CUDAMatrix::cudaParams CUDAMatrix::getCUDAParams(int rows, int cols) {
 	cudaParams cp;
 	cp.tpb = dim3(rows, cols);
@@ -159,7 +139,18 @@ CUDAMatrix::cudaParams CUDAMatrix::getCUDAParams(int rows, int cols) {
 
 // INTERNAL PADE APPROXIMATION CODE
 
-// Get the pade parameters
+int CUDAMatrix::ell(CUDAMatrix& A, double coef, int m) {
+	CUDAMatrix sA(A.getNumRows());
+	CUDAMatrix::abs(A, sA);
+	double scale = std::pow(coef, (1 / (double) (2 * m + 1)));
+	CUDAMatrix::mul(sA, scale, sA);
+	//double alpha = sA.getNormAm(2 * m + 1) / A.getNorm(1);     2 LINES BELOW ARE TEMPORARY REPLACEMENT
+	CUDAMatrix::pow(sA, (2 * m + 1), sA);
+	double alpha = sA.getNorm(1) / (double) (A.getNorm(1));
+	/////
+	return utils::max(ceil(log2(2 * alpha / std::numeric_limits<double>::epsilon()) / (2 * m)), 0.0);
+}
+
 CUDAMatrix::padeParams CUDAMatrix::getPadeParams(CUDAMatrix& A) {
 	// Init
 	int d4, d6, d8, d10;
@@ -181,18 +172,10 @@ CUDAMatrix::padeParams CUDAMatrix::getPadeParams(CUDAMatrix& A) {
 		(1 / 113250775606021113483283660800000000.0)
 	};
 	theta = {
-		3.650024139523051e-008,
-		5.317232856892575e-004,
 		1.495585217958292e-002,
-		8.536352760102745e-002,
 		2.539398330063230e-001,
-		5.414660951208968e-001,
 		9.504178996162932e-001,
-		1.473163964234804e+000,
 		2.097847961257068e+000,
-		2.811644121620263e+000,
-		3.602330066265032e+000,
-		4.458935413036850e+000,
 		5.371920351148152e+000
 	};
 	// Get powers of A
@@ -215,58 +198,48 @@ CUDAMatrix::padeParams CUDAMatrix::getPadeParams(CUDAMatrix& A) {
 	p.pow[8]->syncHost();
 	p.pow[10]->syncHost();
 	////
-
-	// Get norms
 	d4 = (int) (std::pow(p.pow[4]->getNorm(1), (1 / 4)));
 	d6 = (int) (std::pow(p.pow[6]->getNorm(1), (1 / 6)));
 	eta1 = utils::max(d4, d6);
-	if (eta1 <= theta[1] && ell(A, coef[1], 3) == 0) {
+	if ((eta1 <= theta[0]) && (ell(A, coef[0], 3) == 0)) {
 		p.mVal = 3;
 		return p;
 	}
-	if (eta1 <= theta[2] && ell(A, coef[2], 5) == 0) {
+	if ((eta1 <= theta[1]) && (ell(A, coef[1], 5) == 0)) {
 		p.mVal = 5;
 		return p;
 	}
-	if (true) {//(A.isSmall()) {
-		d8 = (int) (p.pow[8]->getNorm(1));
-		d8 = (int) (d8 ^ (1 / 8));
+	if (true) { //(A.isSmall()) {
+		d8 = (int) (std::pow(p.pow[8]->getNorm(1), 1 / 8));
 	} else {
-		//d8 = normAm(powers[4], 2) ^ (1 / 8);
+		//d8 = (int) (pow(p.pow[4]->getNormAm(2), 1 / 8));
 	}
 	eta3 = utils::max(d6, d8);
-	if (eta3 <= theta[3] && ell(A, coef[3], 7) == 0) {
+	if ((eta3 <= theta[2]) && (ell(A, coef[2], 7) == 0)) {
 		p.mVal = 7;
 		return p;
 	}
-	if (eta3 <= theta[4] && ell(A, coef[4], 9) == 0) {
+	if ((eta3 <= theta[3]) && (ell(A, coef[3], 9) == 0)) {
 		p.mVal = 9;
 		return p;
 	}
 	if (true) { //(A.isSmall()) {
 		d10 = (int) (std::pow(p.pow[10]->getNorm(1), 1.0 / 10));
 	} else {
-		//d10 = (int) (std::pow(normAm(powers[2], 5), 1.0 / 10));
+		//d10 = (int) (std::pow(p.pow[2]->getNormAm(5), 1.0 / 10));
 	}
 	eta4 = utils::max(d8, d10);
 	eta5 = utils::min(eta3, eta4);
-	//p.scale = utils::max((int) (ceil(log2(eta5 / theta[5]))), 0);
-	//p.scale += ell(pow((A / 2), p.scale), coef[5], 13);
+	//p.scale = utils::max((int) (ceil(log2(eta5 / theta[4]))), 0);
+	//p.scale += ell(pow((A / 2), p.scale), coef[4], 13);
 	//if (p.scale == INFINITY) {
-		//[t, s] = log2(norm(A, 1) / theta.end());
-		//s = s - (t == 0.5); //adjust s if normA / theta(end) is a power of 2.
+		//[t, s] = log2(A.getNorm(1) / theta[4]);
+		//s = s - (t == 0.5); //adjust s if normA / theta[4] is a power of 2.
 	//}
 	p.mVal = 13;
 	return p;
 }
-// Something to do with pade scaling
-int CUDAMatrix::ell(CUDAMatrix& A, double coef, int m) {
-	//Matrix* scaledA = coef. ^ (1 / (2 * m_val + 1)).*abs(T);
-	//alpha = normAm(scaledA, 2 * m_val + 1) / oneNorm(T);
-	//t = max(ceil(log2(2 * alpha / eps(class(alpha))) / (2 * m_val)), 0);
-	return 0;
-}
-// Get the pade coefficients
+
 std::vector<double> CUDAMatrix::getPadeCoefficients(int m) {
 	switch (m) {
 		case 3:
@@ -286,21 +259,20 @@ std::vector<double> CUDAMatrix::getPadeCoefficients(int m) {
 
 // CONSTRUCTORS
 
-// Default constructor. Creates an uninitialsed instance of a matrix
 CUDAMatrix::CUDAMatrix() {
 	initialised = false;
 }
-// Creates an instance of a square matrix and initialises it
+
 CUDAMatrix::CUDAMatrix(int inNumRowsCols) {
 	init(inNumRowsCols, inNumRowsCols);
 	setMatrix(0);
 }
-// Creates an instance of an (n x m) matrix and initialises it
+
 CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols) {
 	init(inNumRows, inNumCols);
 	setMatrix(0);
 }
-// Creates an instance of a square matrix and assigns a value to it
+
 CUDAMatrix::CUDAMatrix(int inNumRowsCols, std::initializer_list<double> inMatrix) {
 	if (inMatrix.size() == inNumRowsCols*inNumRowsCols) {
 		init(inNumRowsCols, inNumRowsCols);
@@ -309,7 +281,7 @@ CUDAMatrix::CUDAMatrix(int inNumRowsCols, std::initializer_list<double> inMatrix
 		throw std::runtime_error("Initialiser-list size does not match matrix size");
 	}
 }
-// Creates an instance of an (n x m) matrix and assigns a value to it
+
 CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols, std::initializer_list<double> inMatrix) {
 	if (inMatrix.size() == inNumRows*inNumCols) {
 		init(inNumRows, inNumCols);
@@ -318,7 +290,7 @@ CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols, std::initializer_list<doubl
 		throw std::runtime_error("Initialiser-list size does not match matrix size");
 	}
 }
-// Copy constructor
+
 CUDAMatrix::CUDAMatrix(const CUDAMatrix &obj) {
 	if (obj.initialised) {
 		h_matrix = obj.h_matrix;
@@ -332,7 +304,7 @@ CUDAMatrix::CUDAMatrix(const CUDAMatrix &obj) {
 		throw std::runtime_error("Cannot copy uninitialised matrix");
 	}
 }
-// Initialiser
+
 void CUDAMatrix::init(int inNumRows, int inNumCols) {
 	numRows = inNumRows;
 	numCols = inNumCols;
@@ -341,7 +313,7 @@ void CUDAMatrix::init(int inNumRows, int inNumCols) {
 	alloc();
 	initialised = true;
 }
-// Destructor
+
 CUDAMatrix::~CUDAMatrix() {
 	dealloc();
 }
@@ -513,6 +485,38 @@ CUDATimer CUDAMatrix::mul(CUDAMatrix& A, double scalar, CUDAMatrix& R) {
 	}
 }
 
+CUDATimer CUDAMatrix::pow(CUDAMatrix& A, int pow, CUDAMatrix& R) {
+	if (A.isInitialised() && R.isInitialised()) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
+		int rr = R.getNumRows();
+		int rc = R.getNumCols();
+		if (ar == ac && ac == rr && rr == rc) {
+			A.syncDevice();
+			CUDAMatrix T(ar);
+			T.setIdentity();
+			T.syncDevice();
+
+			cudaParams cp = getCUDAParams(ar, ac);
+			CUDATimer t;
+
+			t.start();
+			for (int c1 = 0; c1 < pow; c1++) {
+				cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (A.d_matrix, T.d_matrix, T.d_matrix, ar);
+			}
+			t.stop();
+
+			T.syncHost();
+			R.setMatrix(T.getMatrix());
+			return t;
+		} else {
+			throw std::runtime_error("Matrix sizes do not match");
+		}
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
 CUDATimer CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
 	if (A.isInitialised() && R.isInitialised()) {
 		int ar = A.getNumRows();
@@ -531,7 +535,6 @@ CUDATimer CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
 			I.setIdentity();
 
 			t.start();
-			//cudaLUDecomp KERNEL_ARGS2(cp.bpg, cp.tpb) (A.d_matrix, Lower.d_matrix, Upper.d_matrix, n);
 
 			int n = ar;
 			int i, j, k;
@@ -591,75 +594,6 @@ CUDATimer CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
-
-//CUDATimer CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
-//	if (A.isInitialised() && R.isInitialised()) {
-//		int ar = A.getNumRows();
-//		int ac = A.getNumCols();
-//		int rr = R.getNumRows();
-//		int rc = R.getNumCols();
-//		if (ar == ac && ac == rr && rr == rc) {
-//			CUDATimer t;
-//			t.start();
-//			// Init
-//			CUDAMatrix P(ar, ac * 2);
-//			int c1, c2, c3;
-//			int n = ac;
-//			double cell, tmp;
-//			// Copy A into P (Left side)
-//			for (c1 = 0; c1 < n; c1++) {
-//				for (c2 = 0; c2 < n; c2++) {
-//					P.setCell(c1, c2, A.getCell(c1, c2));
-//					if (c1 == c2) {
-//						P.setCell(c1, c2 + n, 1);
-//					}
-//				}
-//			}
-//			// Pivot P
-//			for (c1 = n - 1; c1 > 0; c1--) {
-//				if (P.getCell(c1 - 1, 0) < P.getCell(c1, 0)) {
-//					for (c2 = 0; c2 < n * 2; c2++) {
-//						tmp = P.getCell(c1, c2);
-//						P.setCell(c1, c2, P.getCell(c1 - 1, c2));
-//						P.setCell(c1 - 1, c2, tmp);
-//					}
-//				}
-//			}
-//			// Reduce to diagonal matrix
-//			for (c1 = 0; c1 < n * 2; c1++) {
-//				for (c2 = 0; c2 < n; c2++) {
-//					if (c2 != c1 && c1 < n) {
-//						tmp = P.getCell(c2, c1) / P.getCell(c1, c1);
-//						for (c3 = 0; c3 < n * 2; c3++) {
-//							cell = P.getCell(c2, c3) - (P.getCell(c1, c3) * tmp);
-//							P.setCell(c2, c3, cell);
-//						}
-//					}
-//				}
-//			}
-//			// Reduce to unit matrix
-//			for (c1 = 0; c1 < n; c1++) {
-//				tmp = P.getCell(c1, c1);
-//				for (c2 = 0; c2 < n * 2; c2++) {
-//					P.setCell(c1, c2, P.getCell(c1, c2) / tmp);
-//				}
-//			}
-//			// Copy P (Right side) to R
-//			for (c1 = 0; c1 < n; c1++) {
-//				for (c2 = 0; c2 < n; c2++) {
-//					R.setCell(c1, c2, P.getCell(c1, c2 + n));
-//				}
-//			}
-//			t.stop();
-//			R.syncDevice();
-//			return t;
-//		} else {
-//			throw std::runtime_error("Cannot find the inverse of this matrix");
-//		}
-//	} else {
-//		throw std::runtime_error("Cannot perform matrix operations before initialisation");
-//	}
-//}
 
 CUDATimer CUDAMatrix::tra(CUDAMatrix& A, CUDAMatrix& R) {
 	if (A.isInitialised() && R.isInitialised()) {
@@ -790,28 +724,21 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
 					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (I.d_matrix, c[0], TMP.d_matrix, n);				// I * c[0]     -> TMP
 					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, V.d_matrix, n);				// T + TMP      -> V
-					// TESTING
-					std::cout << "s = " << s << std::endl;
-					std::cout << "m = " << m << std::endl;
-					A.syncHost();
-					U.syncHost();
-					V.syncHost();
-					I.syncHost();
-					T.syncHost();
-					TMP.syncHost();
-					std::cout << "A" << A << "U" << U << "V" << V;
-					/////////
 				}
+				// TESTING
+				A.syncHost();
+				U.syncHost();
+				V.syncHost();
+				std::cout << "A" << A << "U" << U << "V" << V;
+				/////////
 				// This is the equivellent of ..
 				// R = (V - U) / (2 * U) + I;  ||?? R = (-U + V) / (U + V);
 				cudaSub KERNEL_ARGS2(cp.bpg, cp.tpb) (V.d_matrix, U.d_matrix, T.d_matrix, n);
 				cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (U.d_matrix, 2, TMP.d_matrix, n);
 				//cudaInv KERNEL_ARGS2(cp.bpg, cp.tpb) (TMP.d_matrix, TMP.d_matrix, n); // TEMP CODE BELOW
-				TMP.syncHost();
-				std::cout << TMP;
-				CUDAMatrix::inv(TMP, TMP);
-				std::cout << TMP;
-				TMP.syncDevice();
+				T.syncHost();
+				CUDAMatrix::inv(T, T);
+				T.syncDevice();
 				//
 				cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
 				cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, I.d_matrix, R.d_matrix, n);
@@ -841,12 +768,38 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 	}
 }
 
+CUDATimer CUDAMatrix::abs(CUDAMatrix& A, CUDAMatrix& R) {
+	if (A.isInitialised() && R.isInitialised()) {
+		int ar = A.getNumRows();
+		int ac = A.getNumCols();
+		int rr = R.getNumRows();
+		int rc = R.getNumCols();
+		if (ar == ac && ac == rr && rr == rc) {
+			A.syncDevice();
+
+			cudaParams cp = getCUDAParams(ar, ac);
+			CUDATimer t;
+
+			t.start();
+			cudaAbs KERNEL_ARGS2(cp.bpg, cp.tpb) (A.d_matrix, R.d_matrix, ar);
+			t.stop();
+
+			R.syncHost();
+			return t;
+		} else {
+			throw std::runtime_error("Matrix sizes do not match");
+		}
+	} else {
+		throw std::runtime_error("Cannot perform matrix operations before initialisation");
+	}
+}
+
 // BOOLEANS
 
 bool CUDAMatrix::isInitialised() {
 	return initialised;
 }
-// Check if a matrix is square
+
 bool CUDAMatrix::isSquare() {
 	if (initialised) {
 		if (numCols == numRows) {
@@ -858,7 +811,7 @@ bool CUDAMatrix::isSquare() {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
-// Check if a matrix is diagonal
+
 bool CUDAMatrix::isDiagonal() {
 	if (initialised) {
 		if (!isSquare()) {
@@ -876,7 +829,7 @@ bool CUDAMatrix::isDiagonal() {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
-// Check if a matrix is an identity matrix
+
 bool CUDAMatrix::isIdentity() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
@@ -891,7 +844,7 @@ bool CUDAMatrix::isIdentity() {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
-// Check if a matrix is a zero matrix
+
 bool CUDAMatrix::isZero() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
@@ -906,7 +859,7 @@ bool CUDAMatrix::isZero() {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
 }
-// Check if a matrix is "small"
+
 bool CUDAMatrix::isSmall() {
 	return utils::max(numRows, numCols) < 150;
 }
@@ -951,7 +904,9 @@ void CUDAMatrix::setMatrix(double val) {
 
 void CUDAMatrix::setMatrix(double* inMatrix) {
 	if (isInitialised()) {
-		memcpy(&h_matrix, inMatrix, size);
+		for (int c1 = 0; c1 < numEls; c1++) {
+			h_matrix[c1] = inMatrix[c1];
+		}
 	} else {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}
@@ -1016,7 +971,6 @@ void CUDAMatrix::setRandomInt(int min, int max) {
 
 // GETTERS
 
-// Find the normal of a matrix
 double CUDAMatrix::getNorm(int n) {
 	int c1, c2;
 	double sum, max = 0;
@@ -1025,7 +979,7 @@ double CUDAMatrix::getNorm(int n) {
 		for (c1 = 0; c1 < numCols; c1++) {
 			sum = 0;
 			for (c2 = 0; c2 < numRows; c2++) {
-				sum += abs(getCell(c1, c2));
+				sum += std::abs(getCell(c1, c2));
 			}
 			if (sum > max) {
 				max = sum;
@@ -1037,7 +991,7 @@ double CUDAMatrix::getNorm(int n) {
 		for (c1 = 0; c1 < numRows; c1++) {
 			sum = 0;
 			for (c2 = 0; c2 < numCols; c2++) {
-				sum += abs(getCell(c1, c2));
+				sum += std::abs(getCell(c1, c2));
 			}
 			if (sum > max) {
 				max = sum;
@@ -1140,7 +1094,7 @@ int utils::getNumDigits(double x) {
 	}
 	return length;
 }
-// Find the maximum of 2 integers
+
 int utils::max(int x, int y) {
 	if (x > y) {
 		return x;
@@ -1148,7 +1102,7 @@ int utils::max(int x, int y) {
 		return y;
 	}
 }
-// Find the maximum of 2 doubles
+
 double utils::max(double x, double y) {
 	if (x > y) {
 		return x;
@@ -1156,7 +1110,7 @@ double utils::max(double x, double y) {
 		return y;
 	}
 }
-// Find the minimum of 2 integers
+
 int utils::min(int x, int y) {
 	if (x < y) {
 		return x;
@@ -1164,7 +1118,7 @@ int utils::min(int x, int y) {
 		return y;
 	}
 }
-// Find the minimum of 2 doubles
+
 double utils::min(double x, double y) {
 	if (x < y) {
 		return x;
@@ -1175,7 +1129,6 @@ double utils::min(double x, double y) {
 
 // OPERATOR OVERRIDES
 
-// <<
 std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
 	if (A.isInitialised()) {
 		double cell;
@@ -1185,7 +1138,7 @@ std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
 			// Get precision
 			cell = A.getCell(c1);
 			if ((cell - (int) (cell)) != 0.0) {
-				precision = 3;
+				precision = 20;
 			}
 			// Get maximum number length
 			length = utils::getNumDigits(cell);

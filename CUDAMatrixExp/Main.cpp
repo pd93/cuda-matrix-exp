@@ -67,8 +67,19 @@ int main(int argc, char **argv) {
 		//t = CUDAMatrix::inv(A, InvA);
 		//std::cout << "A" << A << "Inv(A)" << InvA << std::setprecision(5) << std::fixed << t.getTime() << "s";
 
-		// MATRIX EXPONENTIAL TESTS
+		//CUDAMatrix A(2, {
+		//	10.3, 10.1,
+		//	10, 10
+		//});
+		//CUDAMatrix B(2, {
+		//	2, 5.4,
+		//	3.5, 4
+		//});
+		//CUDAMatrix R(2);
+		//CUDAMatrix::sub(A, B, R);
+		//std::cout << R;
 
+		// MATRIX EXPONENTIAL TESTS
 		CUDAMatrix A(3);
 		A.setIdentity();
 		CUDAMatrix eA = CUDAMatrix(A.getNumRows(), A.getNumCols());

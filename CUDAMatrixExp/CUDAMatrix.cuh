@@ -32,6 +32,7 @@ __global__ void cudaSub(double* A, double* B, double* R, int n);
 __global__ void cudaSubScalar(double* A, double scalar, double* R, int n);
 __global__ void cudaMul(double* A, double* B, double* R, int n);
 __global__ void cudaMulScalar(double* A, double scalar, double* R, int n);
+__global__ void cudaAbs(double* A, double* R, int n);
 
 class CUDAMatrix {
 private:
@@ -60,7 +61,7 @@ private:
 	static cudaParams getCUDAParams(int rows, int cols);
 	// INTERNAL PADE APPROXIMATION CODE
 	static padeParams getPadeParams(CUDAMatrix& A);
-	static int ell(CUDAMatrix& A, double coef, int m);
+	static int ell(CUDAMatrix& A, double coef, int m);			// Switch to CUDA calls not C++
 	static std::vector<double> getPadeCoefficients(int m);
 public:
 	// CONSTRUCTORS & DESTRUCTOR
@@ -79,10 +80,13 @@ public:
 	static CUDATimer sub(CUDAMatrix& A, double scalar, CUDAMatrix& R);
 	static CUDATimer mul(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R);
 	static CUDATimer mul(CUDAMatrix& A, double scalar, CUDAMatrix& R);
-	static CUDATimer tra(CUDAMatrix& A, CUDAMatrix& R);
+	static CUDATimer pow(CUDAMatrix& A, int pow, CUDAMatrix& R);
+	static CUDATimer tra(CUDAMatrix& A, CUDAMatrix& R);			// REWRITE FOR CUDA
 	static CUDATimer inv(CUDAMatrix& A, CUDAMatrix& R);			// REWRITE FOR CUDA    // Special case for scalar matrices (1/diags)
 	static CUDATimer exp(CUDAMatrix& A, CUDAMatrix& R);
+	static CUDATimer abs(CUDAMatrix& A, CUDAMatrix& R);			// WRITE
 	// BOOLEANS
+	//bool isEqual(CUDAMatrix& B);								// WRITE
 	bool isInitialised();
 	bool isSquare();
 	bool isDiagonal();
@@ -100,7 +104,8 @@ public:
 	void setRandomDouble(double min = 0, double max = 1);
 	void setRandomInt(int min = 0, int max = 1);
 	// GETTERS
-	double getNorm(int n);						// REWRITE FOR CUDA
+	double getNorm(int n);
+	//double getNormAm(int n);									// WRITE (Maybe)
 	int getCurRow(int i);
 	int getCurCol(int i);
 	double getCell(int row, int col);
