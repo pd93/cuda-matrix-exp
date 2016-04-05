@@ -17,71 +17,15 @@ int main(int argc, char **argv) {
 
 		CUDATimer t;
 
-		//std::cout << "Create A" << std::endl;
-		//CUDAMatrix A(5, {
-		//	10, 2, 23, 13, 2,
-		//	3, 5, 41, 18, 3,
-		//	35, 12, 3, 13, 14,
-		//	7, 22, 26, 2, 35,
-		//	24, 31, 3, 66, 18
-		//});
-		//std::cout << A << std::endl;
+		CUDAMatrix A(5, {
+			10, 2, 23, 13, 2,
+			3, 5, 41, 18, 3,
+			35, 12, 3, 13, 14,
+			7, 22, 26, 2, 35,
+			24, 31, 3, 66, 18
+		});
+		//std::cout << "A" << A;
 
-		//std::cout << "Create B" << std::endl;
-		//CUDAMatrix B(5, {
-		//	2, 3, 0, 1, 1,
-		//	3, 2, 1, 2, 4,
-		//	2, 1, 3, 3, 2,
-		//	0, 2, 1, 2, 3,
-		//	0, 3, 1, 3, 1
-		//});
-		//std::cout << B << std::endl;
-
-		//std::cout << "Create R1 = add(A, B) " << std::endl;
-		//CUDAMatrix R1 = CUDAMatrix(A.getNumRows(), A.getNumCols());
-		//t = CUDAMatrix::add(A, B, R1);
-		//std::cout << R1 << std::endl << std::setprecision(5) << std::fixed << t.getTime() << "s" << std::endl << std::endl;
-
-		//std::cout << "Create R2 = sub(A, B) " << std::endl;
-		//CUDAMatrix R2 = CUDAMatrix(A.getNumRows(), A.getNumCols());
-		//t = CUDAMatrix::sub(A, B, R2);
-		//std::cout << R2 << std::endl << std::setprecision(5) << std::fixed << t.getTime() << "s" << std::endl << std::endl;
-
-		//std::cout << "Create R3 = mul(A, B) " << std::endl;
-		//CUDAMatrix R3 = CUDAMatrix(A.getNumRows(), A.getNumCols());
-		//t = CUDAMatrix::mul(A, B, R3);
-		//std::cout << R3 << std::endl << std::setprecision(5) << std::fixed << t.getTime() << "s" << std::endl << std::endl;
-
-		//std::cout << "Create R4 = inv(B) " << std::endl;
-		//CUDAMatrix R4 = CUDAMatrix(A.getNumRows(), A.getNumCols());
-		//CUDAMatrix::inv(B, R4);
-		//std::cout << R4 << std::endl << std::setprecision(5) << std::fixed << t.getTime() << "s" << std::endl << std::endl;
-
-		// MATRIX INVERSE TESTS
-		//CUDAMatrix A(3, {
-		//	25, 5, 1,
-		//	64, 8, 1,
-		//	144, 12, 1
-		//});
-		//CUDAMatrix InvA(3);
-		//t = CUDAMatrix::inv(A, InvA);
-		//std::cout << "A" << A << "Inv(A)" << InvA << std::setprecision(5) << std::fixed << t.getTime() << "s";
-
-		//CUDAMatrix A(2, {
-		//	10.3, 10.1,
-		//	10, 10
-		//});
-		//CUDAMatrix B(2, {
-		//	2, 5.4,
-		//	3.5, 4
-		//});
-		//CUDAMatrix R(2);
-		//CUDAMatrix::sub(A, B, R);
-		//std::cout << R;
-
-		// MATRIX EXPONENTIAL TESTS
-		CUDAMatrix A(3);
-		A.setIdentity();
 		CUDAMatrix eA = CUDAMatrix(A.getNumRows(), A.getNumCols());
 		t = CUDAMatrix::exp(A, eA);
 		std::cout << "e^A" << eA << std::setprecision(5) << std::fixed << t.getTime()/1000 << "s";

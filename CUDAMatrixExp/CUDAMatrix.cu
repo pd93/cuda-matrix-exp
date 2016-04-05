@@ -144,17 +144,26 @@ int CUDAMatrix::ell(CUDAMatrix& A, double coef, int m) {
 	CUDAMatrix::abs(A, sA);
 	double scale = std::pow(coef, (1 / (double) (2 * m + 1)));
 	CUDAMatrix::mul(sA, scale, sA);
+
+
+	std::cout << "sA" << sA;
+
+
 	//double alpha = sA.getNormAm(2 * m + 1) / A.getNorm(1);     2 LINES BELOW ARE TEMPORARY REPLACEMENT
 	CUDAMatrix::pow(sA, (2 * m + 1), sA);
 	double alpha = sA.getNorm(1) / (double) (A.getNorm(1));
+
+
+	std::cout << "alpha = " << alpha << std::endl;
+
+
 	/////
 	return utils::max(ceil(log2(2 * alpha / std::numeric_limits<double>::epsilon()) / (2 * m)), 0.0);
 }
 
 CUDAMatrix::padeParams CUDAMatrix::getPadeParams(CUDAMatrix& A) {
 	// Init
-	int d4, d6, d8, d10;
-	int eta1, eta3, eta4, eta5;
+	double d4, d6, d8, d10, eta1, eta3, eta4, eta5;
 	int ar = A.getNumRows();
 	int ac = A.getNumCols();
 	std::vector<double> theta;
@@ -198,8 +207,10 @@ CUDAMatrix::padeParams CUDAMatrix::getPadeParams(CUDAMatrix& A) {
 	p.pow[8]->syncHost();
 	p.pow[10]->syncHost();
 	////
-	d4 = (int) (std::pow(p.pow[4]->getNorm(1), (1 / 4)));
-	d6 = (int) (std::pow(p.pow[6]->getNorm(1), (1 / 6)));
+
+	// Find mVal
+	d4 = std::pow(p.pow[4]->getNorm(1), (1.0 / 4));
+	d6 = std::pow(p.pow[6]->getNorm(1), (1.0 / 6));
 	eta1 = utils::max(d4, d6);
 	if ((eta1 <= theta[0]) && (ell(A, coef[0], 3) == 0)) {
 		p.mVal = 3;
@@ -210,9 +221,9 @@ CUDAMatrix::padeParams CUDAMatrix::getPadeParams(CUDAMatrix& A) {
 		return p;
 	}
 	if (true) { //(A.isSmall()) {
-		d8 = (int) (std::pow(p.pow[8]->getNorm(1), 1 / 8));
+		d8 = std::pow(p.pow[8]->getNorm(1), (1.0 / 8));
 	} else {
-		//d8 = (int) (pow(p.pow[4]->getNormAm(2), 1 / 8));
+		//d8 = pow(p.pow[4]->getNormAm(2), (1.0 / 8));
 	}
 	eta3 = utils::max(d6, d8);
 	if ((eta3 <= theta[2]) && (ell(A, coef[2], 7) == 0)) {
@@ -224,18 +235,24 @@ CUDAMatrix::padeParams CUDAMatrix::getPadeParams(CUDAMatrix& A) {
 		return p;
 	}
 	if (true) { //(A.isSmall()) {
-		d10 = (int) (std::pow(p.pow[10]->getNorm(1), 1.0 / 10));
+		d10 = std::pow(p.pow[10]->getNorm(1), (1.0 / 10));
 	} else {
-		//d10 = (int) (std::pow(p.pow[2]->getNormAm(5), 1.0 / 10));
+		//d10 = std::pow(p.pow[2]->getNormAm(5), (1.0 / 10));
 	}
+	// Find scaling factor
 	eta4 = utils::max(d8, d10);
 	eta5 = utils::min(eta3, eta4);
-	//p.scale = utils::max((int) (ceil(log2(eta5 / theta[4]))), 0);
-	//p.scale += ell(pow((A / 2), p.scale), coef[4], 13);
-	//if (p.scale == INFINITY) {
-		//[t, s] = log2(A.getNorm(1) / theta[4]);
-		//s = s - (t == 0.5); //adjust s if normA / theta[4] is a power of 2.
-	//}
+	p.scale = utils::max((int) (ceil(log2(eta5 / theta[4]))), 0);
+	CUDAMatrix sA(ar, ac);
+	double multiplier = 1.0 / std::pow(2, p.scale);
+	CUDAMatrix::mul(A, multiplier, sA);
+	p.scale += ell(sA, coef[4], 13);
+	if (std::isinf((double) p.scale)) {
+		std::cout << "S = INF" << std::endl;
+		int exp;																		// THIS CODE IS NOT ERROR CHECKED!!!!!
+		double t = std::frexp(A.getNorm(1) / theta[4], &exp);
+		p.scale = exp - (t == 0.5);
+	}
 	p.mVal = 13;
 	return p;
 }
@@ -663,7 +680,7 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 				cudaParams cp = getCUDAParams(ar, ac);
 				// Get Pade params
 				padeParams p = getPadeParams(A);
-				double s = p.scale;
+				int s = p.scale;
 				int m = p.mVal;
 				std::vector<CUDAMatrix*> pow = p.pow;
 				// Get Pade coefficients
@@ -672,11 +689,14 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 				t.start();
 				// Scaling
 				if (s != 0) {
-					//A = A / (2.^s);
-					//powers = cellfun(@rdivide, powers, ...
-					//num2cell(2. ^ (s * (1:length(powers)))), 'UniformOutput', false);
+					//CUDAMatrix::mul(A, 1 / (2 ^ s), A);
+					for (c1 = 2; c1 <= 10; c1 += 2) {
+						//CUDAMatrix::mul(*pow[c1], 1 / (2 ^ s), *pow[c1]);
+					}
+					//powers = cellfun(@rdivide, powers, num2cell(2. ^ (s * (1:length(powers)))), 'UniformOutput', false);
 				}
 				// Approximation
+				std::cout << "m = " << m << " | s = " << s << std::endl;
 				if (m == 3 || m == 5 || m == 7 || m == 9) {
 					for (c1 = (int) (pow.size()) + 2; c1 < m - 1; c1 += 2) { //for (k = strt:2:m-1)
 						cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[c1 - 2]->d_matrix, pow[2]->d_matrix, pow[c1]->d_matrix, n);
@@ -725,12 +745,6 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (I.d_matrix, c[0], TMP.d_matrix, n);				// I * c[0]     -> TMP
 					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, V.d_matrix, n);				// T + TMP      -> V
 				}
-				// TESTING
-				A.syncHost();
-				U.syncHost();
-				V.syncHost();
-				std::cout << "A" << A << "U" << U << "V" << V;
-				/////////
 				// This is the equivellent of ..
 				// R = (V - U) / (2 * U) + I;  ||?? R = (-U + V) / (U + V);
 				cudaSub KERNEL_ARGS2(cp.bpg, cp.tpb) (V.d_matrix, U.d_matrix, T.d_matrix, n);
@@ -979,7 +993,7 @@ double CUDAMatrix::getNorm(int n) {
 		for (c1 = 0; c1 < numCols; c1++) {
 			sum = 0;
 			for (c2 = 0; c2 < numRows; c2++) {
-				sum += std::abs(getCell(c1, c2));
+				sum += std::abs(getCell(c2, c1));
 			}
 			if (sum > max) {
 				max = sum;
@@ -991,7 +1005,7 @@ double CUDAMatrix::getNorm(int n) {
 		for (c1 = 0; c1 < numRows; c1++) {
 			sum = 0;
 			for (c2 = 0; c2 < numCols; c2++) {
-				sum += std::abs(getCell(c1, c2));
+				sum += std::abs(getCell(c2, c1));
 			}
 			if (sum > max) {
 				max = sum;

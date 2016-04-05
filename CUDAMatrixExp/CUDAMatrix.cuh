@@ -18,6 +18,7 @@
 #include <math.h>
 #include <iomanip>
 #include <random>
+#include <complex>
 // Include CUDA stuff
 #include "cuda.h"
 #include "cuda_runtime.h"
