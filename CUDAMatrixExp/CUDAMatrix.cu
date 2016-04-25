@@ -83,7 +83,6 @@ __global__ void cudaAbs(double* A, double* R, int n) {
 
 // MEMORY HANDLERS
 
-// Allocate memory on the host and device
 void CUDAMatrix::alloc() {
 	h_matrix = (double*) malloc(size);
 	cudaError_t result = cudaMalloc((void**) &d_matrix, size);
@@ -91,7 +90,7 @@ void CUDAMatrix::alloc() {
 		throw std::runtime_error("Failed to allocate device memory");
 	}
 }
-// Deallocate memory on the host and device
+
 void CUDAMatrix::dealloc() {
 	free(h_matrix);
 	cudaError_t result = cudaFree(d_matrix);
@@ -144,21 +143,11 @@ int CUDAMatrix::ell(CUDAMatrix& A, double coef, int m) {
 	CUDAMatrix::abs(A, sA);
 	double scale = std::pow(coef, (1 / (double) (2 * m + 1)));
 	CUDAMatrix::mul(sA, scale, sA);
-
-
-	std::cout << "sA" << sA;
-
-
 	//double alpha = sA.getNormAm(2 * m + 1) / A.getNorm(1);     2 LINES BELOW ARE TEMPORARY REPLACEMENT
 	CUDAMatrix::pow(sA, (2 * m + 1), sA);
 	double alpha = sA.getNorm(1) / (double) (A.getNorm(1));
-
-
-	std::cout << "alpha = " << alpha << std::endl;
-
-
 	/////
-	return utils::max(ceil(log2(2 * alpha / std::numeric_limits<double>::epsilon()) / (2 * m)), 0.0);
+	return utils::max((int) (ceil(log2(2 * alpha / std::numeric_limits<double>::epsilon()) / (2 * m))), 0);
 }
 
 CUDAMatrix::padeParams CUDAMatrix::getPadeParams(CUDAMatrix& A) {
@@ -654,7 +643,7 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 			int c1, c2;
 			int n = utils::max(ar, ac);
 			// Special Cases
-			if (A.isDiagonal() && false) {											// REMOVE && FALSE WHEN FINISHED TESTING
+			if (A.isDiagonal()) {
 				t.start();
 				for (c1 = 0; c1 < n; c1++) {
 					R.setCell(c1, c1, std::exp(A.getCell(c1, c1)));
@@ -689,14 +678,15 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 				t.start();
 				// Scaling
 				if (s != 0) {
-					//CUDAMatrix::mul(A, 1 / (2 ^ s), A);
-					for (c1 = 2; c1 <= 10; c1 += 2) {
-						//CUDAMatrix::mul(*pow[c1], 1 / (2 ^ s), *pow[c1]);
+					double multiplier;
+					multiplier = 1.0 / std::pow(2, s);
+					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (A.d_matrix, multiplier, A.d_matrix, n);
+					for (c1 = 2; c1 <= 6; c1 += 2) {
+						multiplier = 1.0 / std::pow(2, (s * c1));
+						cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[c1]->d_matrix, multiplier, pow[c1]->d_matrix, n);
 					}
-					//powers = cellfun(@rdivide, powers, num2cell(2. ^ (s * (1:length(powers)))), 'UniformOutput', false);
 				}
 				// Approximation
-				std::cout << "m = " << m << " | s = " << s << std::endl;
 				if (m == 3 || m == 5 || m == 7 || m == 9) {
 					for (c1 = (int) (pow.size()) + 2; c1 < m - 1; c1 += 2) { //for (k = strt:2:m-1)
 						cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[c1 - 2]->d_matrix, pow[2]->d_matrix, pow[c1]->d_matrix, n);
@@ -756,20 +746,10 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 				//
 				cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);
 				cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, I.d_matrix, R.d_matrix, n);
-
-
-
-				//if (recomputeDiags) {
-				//	R = recompute_block_diag(A, R, blockformat);
-				//}
-				//// Squaring phase.
-				//for (int k = 0; k < s; k++) {
-				//	R = R*R;
-				//	if (recomputeDiags) {
-				//		A = 2 * A;
-				//		R = recompute_block_diag(A, R, blockformat);
-				//	}
-				//}
+				// Squaring
+				for (int k = 0; k < s; k++) {
+					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (R.d_matrix, R.d_matrix, R.d_matrix, n);
+				}
 				t.stop();
 				R.syncHost();
 			}
@@ -1152,7 +1132,7 @@ std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
 			// Get precision
 			cell = A.getCell(c1);
 			if ((cell - (int) (cell)) != 0.0) {
-				precision = 20;
+				precision = 5;
 			}
 			// Get maximum number length
 			length = utils::getNumDigits(cell);
