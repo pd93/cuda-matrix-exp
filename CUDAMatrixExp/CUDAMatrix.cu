@@ -14,7 +14,7 @@
 
 // KERNELS
 
-__global__ void cudaAdd(double* A, double* B, double* R, int n) {
+__global__ void cudaAdd(thrust::complex<double>* A, thrust::complex<double>* B, thrust::complex<double>* R, int n) {
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 	if (row < n && col < n) {
@@ -23,7 +23,7 @@ __global__ void cudaAdd(double* A, double* B, double* R, int n) {
 	__syncthreads();
 }
 
-__global__ void cudaAddScalar(double* A, double scalar, double* R, int n) {
+__global__ void cudaAddScalar(thrust::complex<double>* A, thrust::complex<double> scalar, thrust::complex<double>* R, int n) {
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 	if (row < n && col < n) {
@@ -32,7 +32,7 @@ __global__ void cudaAddScalar(double* A, double scalar, double* R, int n) {
 	__syncthreads();
 }
 
-__global__ void cudaSub(double* A, double* B, double* R, int n) {
+__global__ void cudaSub(thrust::complex<double>* A, thrust::complex<double>* B, thrust::complex<double>* R, int n) {
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 	if (row < n && col < n) {
@@ -41,7 +41,7 @@ __global__ void cudaSub(double* A, double* B, double* R, int n) {
 	__syncthreads();
 }
 
-__global__ void cudaSubScalar(double* A, double scalar, double* R, int n) {
+__global__ void cudaSubScalar(thrust::complex<double>* A, thrust::complex<double> scalar, thrust::complex<double>* R, int n) {
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 	if (row < n && col < n) {
@@ -50,8 +50,8 @@ __global__ void cudaSubScalar(double* A, double scalar, double* R, int n) {
 	__syncthreads();
 }
 
-__global__ void cudaMul(double* A, double* B, double* R, int n) {
-	double sum = 0;
+__global__ void cudaMul(thrust::complex<double>* A, thrust::complex<double>* B, thrust::complex<double>* R, int n) {
+	thrust::complex<double> sum = 0;
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 	if (row < n && col < n) {
@@ -63,16 +63,16 @@ __global__ void cudaMul(double* A, double* B, double* R, int n) {
 	__syncthreads();
 }
 
-__global__ void cudaMulScalar(double* A, double scalar, double* R, int n) {
+__global__ void cudaMulScalar(thrust::complex<double>* A, thrust::complex<double> scalar, thrust::complex<double>* R, int n) {
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 	if (row < n && col < n) {
-		R[row * n + col] = A[row * n + col] * scalar;
+		R[row * n + col] = A[row * n + col]  * scalar;
 	}
 	__syncthreads();
 }
 
-__global__ void cudaAbs(double* A, double* R, int n) {
+__global__ void cudaAbs(thrust::complex<double>* A, thrust::complex<double>* R, int n) {
 	int row = blockIdx.y * blockDim.y + threadIdx.y;
 	int col = blockIdx.x * blockDim.x + threadIdx.x;
 	if (row < n && col < n) {
@@ -84,7 +84,7 @@ __global__ void cudaAbs(double* A, double* R, int n) {
 // MEMORY HANDLERS
 
 void CUDAMatrix::alloc() {
-	h_matrix = (double*) malloc(size);
+	h_matrix = (std::complex<double>*) malloc(size);
 	cudaError_t result = cudaMalloc((void**) &d_matrix, size);
 	if (result != cudaSuccess) {
 		throw std::runtime_error("Failed to allocate device memory");
@@ -98,7 +98,7 @@ void CUDAMatrix::dealloc() {
 		throw std::runtime_error("Failed to free device memory");
 	}
 }
-
+ 
 // CUDA STUFF
 
 void CUDAMatrix::syncHost() {
@@ -271,15 +271,15 @@ CUDAMatrix::CUDAMatrix() {
 
 CUDAMatrix::CUDAMatrix(int inNumRowsCols) {
 	init(inNumRowsCols, inNumRowsCols);
-	setMatrix(0);
+	setMatrix(0.0);
 }
 
 CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols) {
 	init(inNumRows, inNumCols);
-	setMatrix(0);
+	setMatrix(0.0);
 }
 
-CUDAMatrix::CUDAMatrix(int inNumRowsCols, std::initializer_list<double> inMatrix) {
+CUDAMatrix::CUDAMatrix(int inNumRowsCols, std::initializer_list<std::complex<double>> inMatrix) {
 	if (inMatrix.size() == inNumRowsCols*inNumRowsCols) {
 		init(inNumRowsCols, inNumRowsCols);
 		setMatrix(inMatrix);
@@ -288,7 +288,7 @@ CUDAMatrix::CUDAMatrix(int inNumRowsCols, std::initializer_list<double> inMatrix
 	}
 }
 
-CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols, std::initializer_list<double> inMatrix) {
+CUDAMatrix::CUDAMatrix(int inNumRows, int inNumCols, std::initializer_list<std::complex<double>> inMatrix) {
 	if (inMatrix.size() == inNumRows*inNumCols) {
 		init(inNumRows, inNumCols);
 		setMatrix(inMatrix);
@@ -315,7 +315,7 @@ void CUDAMatrix::init(int inNumRows, int inNumCols) {
 	numRows = inNumRows;
 	numCols = inNumCols;
 	numEls = inNumRows*inNumCols;
-	size = sizeof(double) *numEls;
+	size = sizeof(std::complex<double>) * numEls;
 	alloc();
 	initialised = true;
 }
@@ -323,7 +323,7 @@ void CUDAMatrix::init(int inNumRows, int inNumCols) {
 CUDAMatrix::~CUDAMatrix() {
 	dealloc();
 }
-
+ 
 // MATRIX OPERATIONS
 
 CUDATimer CUDAMatrix::add(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R) {
@@ -355,7 +355,7 @@ CUDATimer CUDAMatrix::add(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R) {
 	}
 }
 
-CUDATimer CUDAMatrix::add(CUDAMatrix& A, double scalar, CUDAMatrix& R) {
+CUDATimer CUDAMatrix::add(CUDAMatrix& A, std::complex<double> scalar, CUDAMatrix& R) {
 	if (A.isInitialised() && R.isInitialised()) {
 		int ar = A.getNumRows();
 		int ac = A.getNumCols();
@@ -410,7 +410,7 @@ CUDATimer CUDAMatrix::sub(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R) {
 	}
 }
 
-CUDATimer CUDAMatrix::sub(CUDAMatrix& A, double scalar, CUDAMatrix& R) {
+CUDATimer CUDAMatrix::sub(CUDAMatrix& A, std::complex<double> scalar, CUDAMatrix& R) {
 	if (A.isInitialised() && R.isInitialised()) {
 		int ar = A.getNumRows();
 		int ac = A.getNumCols();
@@ -465,7 +465,7 @@ CUDATimer CUDAMatrix::mul(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R) {
 	}
 }
 
-CUDATimer CUDAMatrix::mul(CUDAMatrix& A, double scalar, CUDAMatrix& R) {
+CUDATimer CUDAMatrix::mul(CUDAMatrix& A, std::complex<double> scalar, CUDAMatrix& R) {
 	if (A.isInitialised() && R.isInitialised()) {
 		int ar = A.getNumRows();
 		int ac = A.getNumCols();
@@ -725,7 +725,7 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
 					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[2]->d_matrix, c[8], TMP.d_matrix, n);		// p[2] * c[8]  -> TMP
 					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
-					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, T.d_matrix, T.d_matrix, n);			// p[6]     -> T
+					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, T.d_matrix, T.d_matrix, n);			// p[6]			-> T
 					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[6]->d_matrix, c[6], TMP.d_matrix, n);		// p[6] * c[6]  -> TMP
 					cudaAdd KERNEL_ARGS2(cp.bpg, cp.tpb) (T.d_matrix, TMP.d_matrix, T.d_matrix, n);				// T + TMP      -> T
 					cudaMulScalar KERNEL_ARGS2(cp.bpg, cp.tpb) (pow[4]->d_matrix, c[4], TMP.d_matrix, n);		// p[4] * c[4]  -> TMP
@@ -813,7 +813,7 @@ bool CUDAMatrix::isDiagonal() {
 		}
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
-				if (c1 != c2 && getCell(c1, c2) != 0) {
+				if (c1 != c2 && getCell(c1, c2) != 0.0) {
 					return false;
 				}
 			}
@@ -828,7 +828,7 @@ bool CUDAMatrix::isIdentity() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
-				if ((c1 != c2 && getCell(c1, c2) != 0) || (c1 == c2 && getCell(c1, c2) != 1)) {
+				if ((c1 != c2 && getCell(c1, c2) != 0.0) || (c1 == c2 && getCell(c1, c2) != 1.0)) {
 					return false;
 				}
 			}
@@ -843,7 +843,7 @@ bool CUDAMatrix::isZero() {
 	if (initialised) {
 		for (int c1 = 0; c1 < numRows; c1++) {
 			for (int c2 = 0; c2 < numCols; c2++) {
-				if (getCell(c1, c2) != 0) {
+				if (getCell(c1, c2) != 0.0) {
 					return false;
 				}
 			}
@@ -858,9 +858,20 @@ bool CUDAMatrix::isSmall() {
 	return utils::max(numRows, numCols) < 150;
 }
 
+bool CUDAMatrix::isComplex() {
+	std::complex<double> cell;
+	for (int c1 = 0; c1 < numEls; c1++) {
+		cell = getCell(c1);
+		if (cell.imag() != 0.0) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // SETTERS
 
-void CUDAMatrix::setCell(int row, int col, double val) {
+void CUDAMatrix::setCell(int row, int col, std::complex<double> val) {
 	if (isInitialised()) {
 		h_matrix[numCols * row + col] = val;
 	} else {
@@ -868,7 +879,7 @@ void CUDAMatrix::setCell(int row, int col, double val) {
 	}
 }
 
-void CUDAMatrix::setCell(int i, double val) {
+void CUDAMatrix::setCell(int i, std::complex<double> val) {
 	if (isInitialised()) {
 		h_matrix[i] = val;
 	} else {
@@ -876,17 +887,7 @@ void CUDAMatrix::setCell(int i, double val) {
 	}
 }
 
-void CUDAMatrix::setMatrix(int val) {
-	if (isInitialised()) {
-		for (int c1 = 0; c1 < getNumEls(); c1++) {
-			h_matrix[c1] = (double) (val);
-		}
-	} else {
-		throw std::runtime_error("Cannot perform matrix operations before initialisation");
-	}
-}
-
-void CUDAMatrix::setMatrix(double val) {
+void CUDAMatrix::setMatrix(std::complex<double> val) {
 	if (isInitialised()) {
 		for (int c1 = 0; c1 < getNumEls(); c1++) {
 			h_matrix[c1] = val;
@@ -896,7 +897,7 @@ void CUDAMatrix::setMatrix(double val) {
 	}
 }
 
-void CUDAMatrix::setMatrix(double* inMatrix) {
+void CUDAMatrix::setMatrix(std::complex<double>* inMatrix) {
 	if (isInitialised()) {
 		for (int c1 = 0; c1 < numEls; c1++) {
 			h_matrix[c1] = inMatrix[c1];
@@ -906,7 +907,7 @@ void CUDAMatrix::setMatrix(double* inMatrix) {
 	}
 }
 
-void CUDAMatrix::setMatrix(std::initializer_list<double> inMatrix) {
+void CUDAMatrix::setMatrix(std::initializer_list<std::complex<double>> inMatrix) {
 	if (isInitialised()) {
 		if (inMatrix.size() == getNumEls()) {
 			std::copy(inMatrix.begin(), inMatrix.end(), h_matrix);
@@ -975,7 +976,7 @@ double CUDAMatrix::getNorm(int n) {
 			for (c2 = 0; c2 < numRows; c2++) {
 				sum += std::abs(getCell(c2, c1));
 			}
-			if (sum > max) {
+			if (std::norm(sum) > std::norm(max)) {
 				max = sum;
 			}
 		}
@@ -987,18 +988,19 @@ double CUDAMatrix::getNorm(int n) {
 			for (c2 = 0; c2 < numCols; c2++) {
 				sum += std::abs(getCell(c2, c1));
 			}
-			if (sum > max) {
+			if (std::norm(sum) > std::norm(max)) {
 				max = sum;
 			}
 		}
 		return max;
 	} else {
-		// Euclidian
-		sum = 0;
-		for (c1 = 0; c1 < numRows*numCols; c1++) {
-			sum += std::pow(getCell(c1), n);
-		}
-		return std::pow(sum, 1.0 / n);
+		//// Euclidian									Not called from anywhere. Requires SVD implementation to work.
+		//sum = 0;
+		//for (c1 = 0; c1 < numEls; c1++) {
+		//	sum += std::pow(getCell(c1), n);
+		//}
+		//return std::pow(sum, 1.0 / n);
+		return -1;
 	}
 }
 
@@ -1018,7 +1020,7 @@ int CUDAMatrix::getCurCol(int i) {
 	}
 }
 
-double CUDAMatrix::getCell(int row, int col) {
+std::complex<double> CUDAMatrix::getCell(int row, int col) {
 	if (isInitialised()) {
 		return h_matrix[row*numCols + col];
 	} else {
@@ -1026,7 +1028,7 @@ double CUDAMatrix::getCell(int row, int col) {
 	}
 }
 
-double CUDAMatrix::getCell(int i) {
+std::complex<double> CUDAMatrix::getCell(int i) {
 	if (isInitialised()) {
 		return h_matrix[i];
 	} else {
@@ -1034,7 +1036,7 @@ double CUDAMatrix::getCell(int i) {
 	}
 }
 
-double* CUDAMatrix::getMatrix() {
+std::complex<double>* CUDAMatrix::getMatrix() {
 	if (isInitialised()) {
 		return h_matrix;
 	} else {
@@ -1076,15 +1078,25 @@ size_t CUDAMatrix::getSize() {
 
 // UTILS
 
-int utils::getNumDigits(double x) {
-	int length;
-	if (x > 1 || x < -1) {
-		length = (int) (floor(log10(abs(x))) + 1);
+int utils::getNumDigits(std::complex<double> x) {
+	int length = 0;
+	// Real
+	if (x.real() > 1.0 || x.real() < -1.0) {
+		length += (int) (floor(log10(abs(x.real()))) + 1);
 	} else {
-		length = 1;
+		length += 1;
 	}
-	if (x < 0) {
+	if (x.real() < 0.0) {
 		length++;
+	}
+	// Complex
+	if (x.imag() != 0.0) {
+		if (x.imag() > 1.0 || x.imag() < -1.0) {
+			length += (int) (floor(log10(abs(x.imag()))) + 1);
+		} else {
+			length += 1;
+		}
+		length += 4;
 	}
 	return length;
 }
@@ -1125,35 +1137,33 @@ double utils::min(double x, double y) {
 
 std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
 	if (A.isInitialised()) {
-		double cell;
-		int c1, c2, length, maxLength = 0, precision = 0;
-		oStream << std::endl;
+		// Init
+		std::complex<double> cell;
+		int c1;
+		bool isComplex = A.isComplex();
+		double max = 0;
 		for (c1 = 0; c1 < A.getNumEls(); c1++) {
-			// Get precision
 			cell = A.getCell(c1);
-			if ((cell - (int) (cell)) != 0.0) {
-				precision = 5;
+			if (cell.real() > max) {
+				max = cell.real();
 			}
-			// Get maximum number length
-			length = utils::getNumDigits(cell);
-			if (length > maxLength) {
-				maxLength = length;
+			if (cell.imag() > max) {
+				max = cell.imag();
 			}
+		}
+		// Output
+		oStream << std::endl << std::setprecision(4);
+		if (max > 9999) {
+			oStream << std::scientific;
+		} else {
+			oStream << std::fixed;
 		}
 		for (c1 = 0; c1 < A.getNumEls(); c1++) {
 			cell = A.getCell(c1);
-			// Remove negative zeros
-			if (cell == 0) {
-				cell = 0;
+			oStream << "| " << cell.real() << " ";
+			if (isComplex) {
+				oStream << "+ " << cell.imag() << "i ";
 			}
-			oStream << "| ";
-			// Add whitespace if shorter than maxLength
-			length = utils::getNumDigits(cell);
-			for (c2 = 0; c2 < (maxLength - length); c2++) {
-				oStream << " ";
-			}
-			// Output number
-			oStream << std::setprecision(precision) << std::fixed << cell << " ";
 			// Output new line if row end reached
 			if (A.getCurRow(c1 + 1) > A.getCurRow(c1)) {
 				oStream << "|";
@@ -1161,6 +1171,39 @@ std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
 					oStream << std::endl;
 				}
 			}
+
+		//	// Get precision
+		//	cell = A.getCell(c1);
+		//	if ((cell - (int) (cell)) != 0.0) {
+		//		precision = 5;
+		//	}
+		//	// Get maximum number length
+		//	length = utils::getNumDigits(cell);
+		//	if (length > maxLength) {
+		//		maxLength = length;
+		//	}
+		//}
+		//for (c1 = 0; c1 < A.getNumEls(); c1++) {
+		//	cell = A.getCell(c1);
+		//	// Remove negative zeros
+		//	if (cell == 0.0) {
+		//		cell = 0;
+		//	}
+		//	oStream << "| ";
+		//	// Add whitespace if shorter than maxLength
+		//	length = utils::getNumDigits(cell);
+		//	for (c2 = 0; c2 < (maxLength - length); c2++) {
+		//		oStream << " ";
+		//	}
+		//	// Output number
+		//	oStream << std::setprecision(precision) << std::fixed << cell << " ";
+		//	// Output new line if row end reached
+		//	if (A.getCurRow(c1 + 1) > A.getCurRow(c1)) {
+		//		oStream << "|";
+		//		if (A.getCurRow(c1 + 1) < A.getNumRows()) {
+		//			oStream << std::endl;
+		//		}
+		//	}
 		}
 		oStream << std::endl;
 		return oStream;

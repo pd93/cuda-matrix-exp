@@ -23,17 +23,18 @@
 #include "cuda.h"
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+#include <thrust/complex.h>
 #include "cuda_intellisense.h"
 #include "CUDATimer.cuh"
 
 // KERNELS
-__global__ void cudaAdd(double* A, double* B, double* R, int n);
-__global__ void cudaAddScalar(double* A, double scalar, double* R, int n);
-__global__ void cudaSub(double* A, double* B, double* R, int n);
-__global__ void cudaSubScalar(double* A, double scalar, double* R, int n);
-__global__ void cudaMul(double* A, double* B, double* R, int n);
-__global__ void cudaMulScalar(double* A, double scalar, double* R, int n);
-__global__ void cudaAbs(double* A, double* R, int n);
+__global__ void cudaAdd(thrust::complex<double>* A, thrust::complex<double>* B, thrust::complex<double>* R, int n);
+__global__ void cudaAddScalar(thrust::complex<double>* A, thrust::complex<double> scalar, thrust::complex<double>* R, int n);
+__global__ void cudaSub(thrust::complex<double>* A, thrust::complex<double>* B, thrust::complex<double>* R, int n);
+__global__ void cudaSubScalar(thrust::complex<double>* A, thrust::complex<double> scalar, thrust::complex<double>* R, int n);
+__global__ void cudaMul(thrust::complex<double>* A, thrust::complex<double>* B, thrust::complex<double>* R, int n);
+__global__ void cudaMulScalar(thrust::complex<double>* A, thrust::complex<double> scalar, thrust::complex<double>* R, int n);
+__global__ void cudaAbs(thrust::complex<double>* A, thrust::complex<double>* R, int n);
 
 class CUDAMatrix {
 private:
@@ -48,8 +49,8 @@ private:
 		std::vector<CUDAMatrix*> pow;
 	};
 	// VARIABLES
-	double* h_matrix;
-	double* d_matrix;
+	std::complex<double>* h_matrix;
+	thrust::complex<double>* d_matrix;
 	int numRows, numCols, numEls;
 	size_t size;
 	bool initialised;
@@ -69,18 +70,18 @@ public:
 	CUDAMatrix();
 	CUDAMatrix(int inNumRowsCols);
 	CUDAMatrix(int inNumRows, int inNumCols);
-	CUDAMatrix(int inNumRowsCols, std::initializer_list<double> inMatrix);
-	CUDAMatrix(int inNumRows, int inNumCols, std::initializer_list<double> inMatrix);
+	CUDAMatrix(int inNumRowsCols, std::initializer_list<std::complex<double>> inMatrix);
+	CUDAMatrix(int inNumRows, int inNumCols, std::initializer_list<std::complex<double>> inMatrix);
 	CUDAMatrix(const CUDAMatrix &obj);
 	void init(int inNumRows, int inNumCols);
 	~CUDAMatrix();
 	// MATRIX OPERATIONS
 	static CUDATimer add(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R);
-	static CUDATimer add(CUDAMatrix& A, double scalar, CUDAMatrix& R);
+	static CUDATimer add(CUDAMatrix& A, std::complex<double> scalar, CUDAMatrix& R);
 	static CUDATimer sub(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R);
-	static CUDATimer sub(CUDAMatrix& A, double scalar, CUDAMatrix& R);
+	static CUDATimer sub(CUDAMatrix& A, std::complex<double> scalar, CUDAMatrix& R);
 	static CUDATimer mul(CUDAMatrix& A, CUDAMatrix& B, CUDAMatrix& R);
-	static CUDATimer mul(CUDAMatrix& A, double scalar, CUDAMatrix& R);
+	static CUDATimer mul(CUDAMatrix& A, std::complex<double> scalar, CUDAMatrix& R);
 	static CUDATimer pow(CUDAMatrix& A, int pow, CUDAMatrix& R);
 	static CUDATimer tra(CUDAMatrix& A, CUDAMatrix& R);			// REWRITE FOR CUDA
 	static CUDATimer inv(CUDAMatrix& A, CUDAMatrix& R);			// REWRITE FOR CUDA    // Special case for scalar matrices (1/diags)
@@ -94,13 +95,13 @@ public:
 	bool isIdentity();
 	bool isZero();
 	bool isSmall();
+	bool isComplex();
 	// SETTERS
-	void setCell(int row, int col, double val);
-	void setCell(int i, double val);
-	void setMatrix(int val);
-	void setMatrix(double val);
-	void setMatrix(double* inMatrix);
-	void setMatrix(std::initializer_list<double> inMatrix);
+	void setCell(int row, int col, std::complex<double> val);
+	void setCell(int i, std::complex<double> val);
+	void setMatrix(std::complex<double> val);
+	void setMatrix(std::complex<double>* inMatrix);
+	void setMatrix(std::initializer_list<std::complex<double>> inMatrix);	// Complex     ||	Better function than copy?
 	void setIdentity();
 	void setRandomDouble(double min = 0, double max = 1);
 	void setRandomInt(int min = 0, int max = 1);
@@ -109,9 +110,9 @@ public:
 	//double getNormAm(int n);									// WRITE (Maybe)
 	int getCurRow(int i);
 	int getCurCol(int i);
-	double getCell(int row, int col);
-	double getCell(int i);
-	double* getMatrix();
+	std::complex<double> getCell(int row, int col);
+	std::complex<double> getCell(int i);
+	std::complex<double>* getMatrix();
 	int getNumRows();
 	int getNumCols();
 	int getNumEls();
@@ -119,11 +120,11 @@ public:
 };
 
 // OPERATOR OVERRIDES
-std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A);
+std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A);			// Do exponents properly (like MATLAB)
 
 // UTILS
 namespace utils {
-	int getNumDigits(double x);
+	int getNumDigits(std::complex<double> x);
 	int max(int x, int y);
 	double max(double x, double y);
 	int min(int x, int y);
