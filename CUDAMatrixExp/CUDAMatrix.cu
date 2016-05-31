@@ -530,9 +530,7 @@ CUDATimer CUDAMatrix::inv(CUDAMatrix& A, CUDAMatrix& R) {
 		int rr = R.getNumRows();
 		int rc = R.getNumCols();
 		if (ar == ac && ac == rr && rr == rc) {
-			A.syncDevice();
-
-			cudaParams cp = getCUDAParams(ar, ac);
+			
 			CUDATimer t;
 			CUDAMatrix L = CUDAMatrix(ar, ac);
 			CUDAMatrix U = CUDAMatrix(ar, ac);
@@ -750,6 +748,7 @@ CUDATimer CUDAMatrix::exp(CUDAMatrix& A, CUDAMatrix& R) {
 				for (int k = 0; k < s; k++) {
 					cudaMul KERNEL_ARGS2(cp.bpg, cp.tpb) (R.d_matrix, R.d_matrix, R.d_matrix, n);
 				}
+				cudaThreadSynchronize();
 				t.stop();
 				R.syncHost();
 			}
@@ -1078,27 +1077,11 @@ size_t CUDAMatrix::getSize() {
 
 // UTILS
 
-int utils::getNumDigits(std::complex<double> x) {
-	int length = 0;
-	// Real
-	if (x.real() > 1.0 || x.real() < -1.0) {
-		length += (int) (floor(log10(abs(x.real()))) + 1);
-	} else {
-		length += 1;
+int utils::getNumDigits(double x) {
+	if (x > 1.0 || x < -1.0) {
+		return (int) (floor(log10(abs(x))) + 1);
 	}
-	if (x.real() < 0.0) {
-		length++;
-	}
-	// Complex
-	if (x.imag() != 0.0) {
-		if (x.imag() > 1.0 || x.imag() < -1.0) {
-			length += (int) (floor(log10(abs(x.imag()))) + 1);
-		} else {
-			length += 1;
-		}
-		length += 4;
-	}
-	return length;
+	return 1;
 }
 
 int utils::max(int x, int y) {
@@ -1135,34 +1118,89 @@ double utils::min(double x, double y) {
 
 // OPERATOR OVERRIDES
 
+
 std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
 	if (A.isInitialised()) {
 		// Init
 		std::complex<double> cell;
-		int c1;
 		bool isComplex = A.isComplex();
-		double max = 0;
+		bool scientific = false;
+		int c1, c2, r, i;
+		int realLength = 0, imagLength = 0, exp = 0;
+		double divider;
+		int precision = 0;
+		int maxFixedDigits = 4;
+		// Get info
 		for (c1 = 0; c1 < A.getNumEls(); c1++) {
 			cell = A.getCell(c1);
-			if (cell.real() > max) {
-				max = cell.real();
+			// Check if it's decimal
+			if ((cell.real() - (int) (cell.real())) != 0.0 ||
+				(cell.imag() - (int) (cell.imag())) != 0.0) {
+				precision = 4;
 			}
-			if (cell.imag() > max) {
-				max = cell.imag();
+			// Get maximum exponent
+			r = utils::getNumDigits(cell.real());
+			i = utils::getNumDigits(cell.imag());
+			if (r - 1 > exp) {
+				exp = r - 1;
+				realLength = r;
+			}
+			if (i - 1 > exp) {
+				exp = i - 1;
+				imagLength = i;
+				if (abs(cell.imag() == 1.0)) {
+					imagLength++;
+				}
 			}
 		}
-		// Output
-		oStream << std::endl << std::setprecision(4);
-		if (max > 9999) {
-			oStream << std::scientific;
-		} else {
-			oStream << std::fixed;
+		// Check if the output should be in fixed or scientific form
+		if (exp >= maxFixedDigits) {
+			scientific = true;
 		}
+		// Get divider for scientific form
+		divider = std::pow(10, exp);
+
+		// Output name and multiplier
+		oStream << " = ";
+		if (scientific) {
+			oStream << "(10 ^ " << exp << ") *";
+		}
+		// Output cell
+		oStream << std::endl << std::setprecision(precision) << std::fixed;
 		for (c1 = 0; c1 < A.getNumEls(); c1++) {
 			cell = A.getCell(c1);
-			oStream << "| " << cell.real() << " ";
+			oStream << "| ";
+			// Spacing and formatting for scientific/fixed
+			if (scientific) {
+				cell /= divider;
+			} else {
+				r = utils::getNumDigits(cell.real());
+				for (c2 = 0; c2 < (realLength - r); c2++) {
+					oStream << " ";
+				}
+			}
+			// Output real
+			oStream << cell.real() << " ";
+			// Output complex
 			if (isComplex) {
-				oStream << "+ " << cell.imag() << "i ";
+				if (cell.imag() != 0.0) {
+					if (cell.imag() > 0.0) {
+						oStream << "+ ";
+					} else {
+						oStream << "- ";
+					}
+					if (abs(cell.imag()) != 1.0) {
+						oStream << std::abs(cell.imag());
+					} else {
+						oStream << " ";
+					}
+					oStream << "i ";
+				} else {
+					i = utils::getNumDigits(cell.imag());
+					for (c2 = 0; c2 < imagLength + 3; c2++) {
+						oStream << " ";
+					}
+				}
 			}
 			// Output new line if row end reached
 			if (A.getCurRow(c1 + 1) > A.getCurRow(c1)) {
@@ -1171,7 +1209,9 @@ std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
 					oStream << std::endl;
 				}
 			}
-
+		}
+		oStream << std::endl;
+		return oStream;
 		//	// Get precision
 		//	cell = A.getCell(c1);
 		//	if ((cell - (int) (cell)) != 0.0) {
@@ -1204,9 +1244,6 @@ std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A) {
 		//			oStream << std::endl;
 		//		}
 		//	}
-		}
-		oStream << std::endl;
-		return oStream;
 	} else {
 		throw std::runtime_error("Cannot perform matrix operations before initialisation");
 	}

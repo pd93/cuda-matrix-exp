@@ -34,3 +34,8 @@ void CUDATimer::clear() {
 float CUDATimer::getTime() {
 	return time;
 }
+
+std::ostream& operator<<(std::ostream& oStream, CUDATimer& t) {
+	oStream << std::setprecision(10) << std::fixed << t.getTime()/1000 << "s" << std::endl;
+	return oStream;
+}

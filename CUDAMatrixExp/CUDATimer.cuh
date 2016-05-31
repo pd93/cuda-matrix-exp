@@ -12,6 +12,9 @@
 // Precompiler include check
 #ifndef timer_h
 #define timer_h
+// Inlcude C/C++ stuff
+#include <iostream>
+#include <iomanip>
 // Include CUDA stuff
 #include "cuda.h"
 #include "cuda_runtime.h"
@@ -28,5 +31,8 @@ public:
 	void clear();
 	float getTime();
 };
+
+// OPERATOR OVERRIDES
+std::ostream& operator<<(std::ostream& oStream, CUDATimer& A);
 
 #endif

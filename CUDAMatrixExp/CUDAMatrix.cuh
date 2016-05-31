@@ -27,6 +27,8 @@
 #include "cuda_intellisense.h"
 #include "CUDATimer.cuh"
 
+#include "cuda_profiler_api.h"
+
 // KERNELS
 __global__ void cudaAdd(thrust::complex<double>* A, thrust::complex<double>* B, thrust::complex<double>* R, int n);
 __global__ void cudaAddScalar(thrust::complex<double>* A, thrust::complex<double> scalar, thrust::complex<double>* R, int n);
@@ -89,6 +91,7 @@ public:
 	static CUDATimer abs(CUDAMatrix& A, CUDAMatrix& R);			// WRITE
 	// BOOLEANS
 	//bool isEqual(CUDAMatrix& B);								// WRITE
+	//bool isScalar();											// WRITE
 	bool isInitialised();
 	bool isSquare();
 	bool isDiagonal();
@@ -124,7 +127,7 @@ std::ostream& operator<<(std::ostream& oStream, CUDAMatrix& A);			// Do exponent
 
 // UTILS
 namespace utils {
-	int getNumDigits(std::complex<double> x);
+	int getNumDigits(double x);
 	int max(int x, int y);
 	double max(double x, double y);
 	int min(int x, int y);

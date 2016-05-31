@@ -33,4 +33,7 @@
     <CudaCompile Include="CUDATimer.cu" />
     <CudaCompile Include="CUDAMatrix.cu" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="ClassDiagram.cd" />
+  </ItemGroup>
 </Project>
