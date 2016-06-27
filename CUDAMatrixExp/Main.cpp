@@ -21,10 +21,10 @@ int main(int argc, char **argv) {
 		std::complex<double> i = std::complex<double>(5, 3);
 		CUDAMatrix A(size, {
 			1, 0, 0, 0, 0,
-			0, 1, 0, 0, 0,
-			0, 0, 1, 0, 0,
-			0, 0, 0, 1, 0,
-			0, 0, 0, 0, 1
+			0, 2, 0, 0, 0,
+			0, 0, 3, 0, 0,
+			0, 0, 0, 4, 0,
+			0, 0, 0, 0, std::complex<double>(0, 5)
 		});
 		CUDAMatrix eA(size);
 		CUDAMatrix eAi(size);
