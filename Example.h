@@ -9,6 +9,5 @@
 // Moderator:  Dr. Irena Spasic
 //
 
-#include "CUDAMatrix.cuh"
-
+#include "src/CUDAMatrix.cuh"
 int main(int argc, char **argv);
